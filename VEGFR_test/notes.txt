@@ -1,0 +1,1 @@
+Note, the extra linkers stuff means you don't have need to identify linkers that need to be removed - they already can be (though if you don't remove them and don't specify them in the linker section, it means you keep all linkers in the rigid bits!)
