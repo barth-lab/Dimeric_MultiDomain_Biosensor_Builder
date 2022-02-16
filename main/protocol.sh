@@ -6,18 +6,66 @@
 # Assembly procotol is essentially domain assemble (with constraints), clustered and then taken further for assembly rounds
 # Construction always needs to occur down (i.e. towards cytoplasm)
 
-O=$(pwd)
+# Note that static vs mpi vs nothing in linux rosetta commands
+
+# https://stackoverflow.com/questions/14447406/bash-shell-script-check-for-a-flag-and-grab-its-value
+# https://archive.is/TRzn4
+
+# optional flags need default values to avoid errors
+x=""
+a=""
+
+# define flags
+while getopts ":R:s:T:l:d:x:a:" opt; do
+  case $opt in
+    R)
+      R=$OPTARG # rosetta location
+      ;;
+    T)
+      TM=$OPTARG # which input domain corresponds to the TM region
+      ;;
+    s)
+      # allow importing of multiple domains https://unix.stackexchange.com/questions/164259/provide-two-arguments-to-one-option-using-getopts 
+      set -f # disable glob
+      IFS=' ' # split on space characters
+      domains=($OPTARG) ;; # domain pdbs
+    l) 
+      l=$OPTARG # linker file (location of where to cut linkers)
+      ;;
+    d)
+      set -f # disable glob
+      IFS=' ' # split on space characters
+      d=($OPTARG) ;; # dimerisation sites
+    x)
+      x="-x $OPTARG" # extra_linker file location
+      ;;
+    a)
+      set -f
+      IFS=' '
+      a=($OPTARG) 
+      a="-a "${a[@]}"";; # avoid linker cutting domains
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+# current script location
+O=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # make run folder
 D=`date +"%s"`
 mkdir run${D}
-cd run${D}
 
-# Input domains - make this generalisable later with number of input arguments
-D1=${O}/$1
-D2=${O}/$2
-D3=${O}/$3
-D4=${O}/$4
+cp "${domains[@]}" ${l} ${x} run${D}/
+
+cd run${D}
+mkdir input_scaffold
 
 # for each input domain, check if it's a dimer (to see where crossing points need to be for design) - note, this need to avoid checking for ligand!
 # FOr now this can be done by seeing if its a homodimer (how to do heterodimers later?)
@@ -32,8 +80,23 @@ D4=${O}/$4
 
 # two protocols - one to run on cluster, one without?
 
+# read input domains from a file is probably easiest
 # Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
-python prepare_scaffold.py -s D1.pdb D2.pdb D3.pdb D4.pdb -d 3 4 -a 3 -l linkers.txt -x extra_linkers_test.txt 
+${O}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
+
+mv cst input_scaffold/ 
+find -name "*_cut.pdb" -type f -exec mv -t input_scaffold/ {} +
+find -name "*fasta" -type f -exec mv -t input_scaffold/ {} +
+
+# rename domains to respect the addition of the _cut suffix
+domains_cut=()
+for i in "${domains[@]}"; do
+    name=$(echo $i | cut -d'.' -f1)
+    domains_cut+=("${name}_cut.pdb")
+done
+
+# run round of first stage of assembly
+bash ${O}/mp_assembly_stage1.sh -R $R -T $T -s "${domains_cut[@]}"
 
 # need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
 
