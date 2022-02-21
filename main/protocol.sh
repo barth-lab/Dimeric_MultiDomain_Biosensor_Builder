@@ -58,14 +58,13 @@ done
 # current script location
 O=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# make run folder
-D=`date +"%s"`
-mkdir run${D}
-
-cp "${domains[@]}" ${l} ${x} run${D}/
-
-cd run${D}
-mkdir input_scaffold
+# make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
+#D=`date +"%s"`
+#mkdir run${D}
+#cp "${domains[@]}" ${l} ${x} run${D}/
+#cd run${D}
+#mkdir input_scaffold
+cd run1645438828/
 
 # for each input domain, check if it's a dimer (to see where crossing points need to be for design) - note, this need to avoid checking for ligand!
 # FOr now this can be done by seeing if its a homodimer (how to do heterodimers later?)
@@ -92,11 +91,14 @@ find -name "*fasta" -type f -exec mv -t input_scaffold/ {} +
 domains_cut=()
 for i in "${domains[@]}"; do
     name=$(echo $i | cut -d'.' -f1)
-    domains_cut+=("${name}_cut.pdb")
+    domains_cut+=("input_scaffold/${name}_cut.pdb")
 done
 
+printf -v domains_str ' %s' "${domains_cut[@]}"
+echo $domains_str
+
 # run round of first stage of assembly
-bash ${O}/mp_assembly_stage1.sh -R $R -T $T -s "${domains_cut[@]}"
+bash ${O}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
 
 # need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
 

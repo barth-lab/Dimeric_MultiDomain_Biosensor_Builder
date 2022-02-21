@@ -118,7 +118,11 @@ def cut_linker(name, line):
         # now create final fasta sequence for verboseness
         fasta = [fasta_l[0], fasta_d, fasta_l[1]]
 
-    return B, fasta # return domain without links, and cooresonding fasta file 
+    # now remove hydrogens from B
+    #B.assign_atomtype()
+    #B_idx = np.asarray(B.data["index"][np.asarray(B.data["atomtype"] != "H")])
+
+    return B, fasta #B.get_subset(B_idx), fasta # return domain without links, and cooresonding fasta file 
 
 def linker_max_span(fasta):
     """
@@ -370,7 +374,7 @@ for cnt, p in enumerate(pdb):
 
     # cut linkers
     M, fasta_M = cut_linker(p, lines[cnt][:-1]) # remove \n from end of lines
-    M.write_pdb(pdb_name + "_cut.pdb")
+    M.write_pdb(pdb_name + "_cut.pdb") # ignore hydrogens
 
     if np.any(linker_avoid == domain_count):
  
