@@ -8,8 +8,6 @@ filename=sys.argv[1]
 with open(filename, "r") as f:
     lines = f.readlines()
 
-print(lines)
-
 new_pdb=sys.argv[1]
 with open(new_pdb, "w") as f:
     for line in lines:
