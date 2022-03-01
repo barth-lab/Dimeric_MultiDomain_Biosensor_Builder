@@ -16,7 +16,7 @@ x=""
 a=""
 
 # define flags
-while getopts ":R:s:T:l:d:x:a:" opt; do
+while getopts ":R:s:T:l:d:x:a:S:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
@@ -36,6 +36,10 @@ while getopts ":R:s:T:l:d:x:a:" opt; do
       set -f # disable glob
       IFS=' ' # split on space characters
       d=($OPTARG) ;; # dimerisation sites
+    S) 
+      # stage of the procotol to run (e.g. 1, 2...) split so we can run on HPC easier
+      S=$OPTARG
+      ;;
     x)
       x="-x $OPTARG" # extra_linker file location
       ;;
@@ -56,51 +60,48 @@ while getopts ":R:s:T:l:d:x:a:" opt; do
 done
 
 # current script location
-O=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
-D=`date +"%s"`
-mkdir run${D}
-cp "${domains[@]}" ${l} ${x} run${D}/
-cd run${D}
-mkdir input_scaffold
-#cd run1645438828/
+if [ $S == 1 ]; then
 
-# for each input domain, check if it's a dimer (to see where crossing points need to be for design) - note, this need to avoid checking for ligand!
-# FOr now this can be done by seeing if its a homodimer (how to do heterodimers later?)
-# Then we need to remove the linkers (but include within fasta)
-# then we need to build the fragment database
-# THen we run domain assembly
+    # make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
+    D=`date +"%s"`
+    mkdir run${D}
+    cp "${domains[@]}" ${l} ${x} run${D}/
+    cd run${D}
+    mkdir input_scaffold
 
-# OTHER NEEDED INPUT FILES:
-# 1) fragment files (for domain assembly and linker modelling) - can be built with fasta file created by prepare_scaffold
-# 2) fasta file of domains and, eventually, chimera
-# 3) Span file for the TM domain
+    # read input domains from a file is probably easiest
+    # Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
+    ${SCRIPT_DIR}/../prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
 
-# two protocols - one to run on cluster, one without?
+    mv cst input_scaffold/ 
+    find -name "*_cut.pdb" -type f -exec mv -t input_scaffold/ {} +
+    find -name "*fasta" -type f -exec mv -t input_scaffold/ {} +
 
-# read input domains from a file is probably easiest
-# Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
-${O}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
+    # rename domains to respect the addition of the _cut suffix
+    domains_cut=()
+    for i in "${domains[@]}"; do
+        name=$(echo $i | cut -d'.' -f1)
+        domains_cut+=("input_scaffold/${name}_cut.pdb")
+    done
 
-mv cst input_scaffold/ 
-find -name "*_cut.pdb" -type f -exec mv -t input_scaffold/ {} +
-find -name "*fasta" -type f -exec mv -t input_scaffold/ {} +
+    printf -v domains_str ' %s' "${domains_cut[@]}"
 
-# rename domains to respect the addition of the _cut suffix
-domains_cut=()
-for i in "${domains[@]}"; do
-    name=$(echo $i | cut -d'.' -f1)
-    domains_cut+=("input_scaffold/${name}_cut.pdb")
-done
+    ${SCRIPT_DIR}/create_frags.sh $R
 
-printf -v domains_str ' %s' "${domains_cut[@]}"
-echo $domains_str
+    echo "########  Protocol stage 1 complete #########"
+    echo ""
+    echo ">> Check input_scaffold - fragments created, fastas, and constraints prepared."
+    echo ">> Now run on the HPC mp_assembly_stage1.slurm with the following variables: "
+    echo "TM=$T"
+    echo "R=/home/dclw/rosetta20_glis/" # rosetta location with assembly protocol
+    echo "domains=$domains_str"
+    echo ""
+    echo "##############################################"
+fi
 
-# run round of first stage of assembly
-bash ${O}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
 
-# need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
 
 # run domain assembly with constraints - building from top to bottom (EC to CT)
 

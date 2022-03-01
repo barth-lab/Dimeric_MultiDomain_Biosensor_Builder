@@ -56,7 +56,7 @@ while getopts ":R:s:T:l:d:x:a:" opt; do
 done
 
 # current script location
-O=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
 D=`date +"%s"`

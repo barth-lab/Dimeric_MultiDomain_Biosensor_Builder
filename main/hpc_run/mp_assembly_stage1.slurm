@@ -1,11 +1,16 @@
 #!/bin/bash
 #SBATCH --time 12:00:00 -n 1
 #SBATCH --array=1-144
+#SBATCH --ntasks=36
+#SBATCH --cpus-per-task=1
 #SBATCH --output slurm.out
 #SBATCH --error slurm.err
 
-R=/home/dclw/rosetta20_glis/
+O=output_scaffold
+mkdir $O
+
 TM=
+R=/home/dclw/rosetta20_glis/
 domains=
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -30,12 +35,14 @@ do
         -constraints::cst_fa_file input_scaffold/cst \
         -constraints:cst_fa_weight 1 \
         -constant_seed \
+	-seed_offset $i \
         -nstruct 100 \
         -out:path:all output_scaffold/ \
-        -out:pdb \
+	-out:suffix _$s \
+        -out:file:silent out_$s.silent \
         -ignore_zero_occupancy false \
-        > output_scaffold/log \
-        2> output_scaffold/err"
+        > output_scaffold/log_$s \
+        2> output_scaffold/err_$s"
 done
 
 bash -c "${commands[${SLURM_ARRAY_TASK_ID}]}"

@@ -2,20 +2,12 @@
 
 # https://stackoverflow.com/questions/14447406/bash-shell-script-check-for-a-flag-and-grab-its-value
 # https://archive.is/TRzn4
-while getopts ":R:T:s:" opt; do
+while getopts ":R:" opt; do
   case $opt in
     R)
       #echo "-R was triggered, Parameter: $OPTARG" >&2
       R=$OPTARG # rosetta location
       ;;
-    T) 
-      TM=$OPTARG # which input domain corresponds to the TM region
-      ;;
-    s)
-      # allow importing of multiple domains https://unix.stackexchange.com/questions/164259/provide-two-arguments-to-one-option-using-getopts 
-      set -f # disable glob
-      IFS=' ' # split on space characters
-      domains=($OPTARG) ;; # use the split+glob operator
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -28,9 +20,6 @@ while getopts ":R:T:s:" opt; do
 done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-
-O=output_scaffold
-mkdir $O
 
 # don't run frag picker unless necessary
 if [ ! -f input_scaffold/frags.200.3mers ] || [ ! -f input_scaffold/frags.200.9mers ]; then 
@@ -54,27 +43,6 @@ fi
 cd input_scaffold/
 set +o noglob
 for f in *.pdb; do
-    python $SCRIPT_DIR/prepare_input_pdb.py ${f}
+    python $SCRIPT_DIR/../prepare_input_pdb.py ${f}
 done
 cd ../
-
-# now run domain assembly
-# need to resolve static etc. later
-$R/source/bin/mp_domain_assembly.linuxgccdebug \
-    -database $R/database/  \
-    -in:file:fasta input_scaffold/all.fasta \
-    -in:file:frag3 input_scaffold/frags.200.3mers \
-    -in:file:frag9 input_scaffold/frags.200.9mers \
-    -mp:assembly:TM_pose_number ${TM} \
-    -mp:assembly:poses "${domains[@]}" \
-    -rebuild_disulf false \
-    -detect_disulf false \
-    -constraints::cst_fa_file input_scaffold/cst \
-    -constraints:cst_fa_weight 1 \
-    -constant_seed \
-    -nstruct 100 \
-    -out:path:all $O \
-    -out:pdb \
-    -ignore_zero_occupancy false \
-    > $O/log \
-    2> $O/err
