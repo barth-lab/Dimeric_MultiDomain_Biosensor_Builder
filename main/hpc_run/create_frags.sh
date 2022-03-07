@@ -19,12 +19,14 @@ while getopts ":R:" opt; do
   esac
 done
 
+echo $R
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # don't run frag picker unless necessary
 if [ ! -f input_scaffold/frags.200.3mers ] || [ ! -f input_scaffold/frags.200.9mers ]; then 
     # get linker positions for where fragment picker needs to occur (include neighbouring sequences)
-    linker_pos=$(python $SCRIPT_DIR/frag_positions.py)
+    linker_pos=$(python $SCRIPT_DIR/../frag_positions.py)
 
     # create fragment files based on fasta
     # https://www.rosettacommons.org/docs/latest/application_documentation/utilities/app-fragment-picker
@@ -33,7 +35,7 @@ if [ ! -f input_scaffold/frags.200.3mers ] || [ ! -f input_scaffold/frags.200.9m
         -database $R/database/  \
         -in:file:vall $R/tools/fragment_tools/vall.jul19.2011.gz \
         -in:file:fasta input_scaffold/all.fasta \
-        -frags:scoring:config $SCRIPT_DIR/../lib/simple.wghts \
+        -frags:scoring:config $SCRIPT_DIR/../../lib/simple.wghts \
         -frags:frag_sizes 3 9 \
         -frags:picking:query_pos $(echo ${linker_pos}) # linker positions from fasta file!
 

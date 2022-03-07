@@ -81,7 +81,7 @@ mkdir input_scaffold
 
 # read input domains from a file is probably easiest
 # Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
-${O}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
+${SCRIPT_DIR}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
 
 mv cst input_scaffold/ 
 find -name "*_cut.pdb" -type f -exec mv -t input_scaffold/ {} +
@@ -98,7 +98,7 @@ printf -v domains_str ' %s' "${domains_cut[@]}"
 echo $domains_str
 
 # run round of first stage of assembly
-bash ${O}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
+bash ${SCRIPT_DIR}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
 
 # need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
 

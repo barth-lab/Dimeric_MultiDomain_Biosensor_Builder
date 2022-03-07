@@ -6,7 +6,7 @@
 # run on fidis
 
 R=/home/dclw/rosetta20_glis/
-in_file=
+in_file=output_scaffold/combined_clean.silent
 radius=
 
 $R/source/bin/cluster.linuxgccdebug \
@@ -19,5 +19,6 @@ $R/source/bin/cluster.linuxgccdebug \
         -cluster:population_weight 1 \
         -cluster:sort_groups_by_energy \
         -cluster:write_centers \
-        > clout \
-        2> clerr
+	-out:path:all output_scaffold/$2/ \
+        > output_scaffold/$2/clout \
+        2> output_scaffold/$2/clerr

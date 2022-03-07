@@ -73,12 +73,12 @@ def cut_linker(name, line):
     if np.sum(line) == 0:
         B = A
         fasta_d = pdb2fasta(B, pdb_name) # fasta of the domain
-        fasta = [[], fasta_d, []]
+        fasta = [["", ""], fasta_d, ["", ""]]
     else: # otherwise, run as normal
         if dimer:
             for i in range(4):
                 if line[i*2] == line[i*2 + 1]:
-                    fasta_l_tmp.append([[], []]) # blank array to make comparison easier later
+                    fasta_l_tmp.append(["", ""]) # blank array to make comparison easier later
                 else:
                     links = np.arange(line[i*2], line[i*2 + 1]+1)
                     rem = np.concatenate((rem, links))
@@ -100,7 +100,7 @@ def cut_linker(name, line):
         else:
             for i in range(2):
                 if line[i*2] == line[i*2 + 1]:
-                    fasta_l.append([])
+                    fasta_l.append(["", ""])
                 else:
                     links = np.arange(line[i*2], line[i*2 + 1]+1)
                     rem = np.concatenate((rem, links))
@@ -114,7 +114,6 @@ def cut_linker(name, line):
 
         # need the fastas to be correctly placed around domains
         fasta_d = pdb2fasta(B, pdb_name) # fasta of the domain
-    
         # now create final fasta sequence for verboseness
         fasta = [fasta_l[0], fasta_d, fasta_l[1]]
 
@@ -190,9 +189,10 @@ def get_linker_stats(linker_fasta):
     l = linker_span(linker_fasta) # x0
 
     if l == lmin:
-        tol = 0 # too small to constrict (i.e. 1 or 2 amino acid linkers)
+        # to bring in line with previous work, increase by lmin
+        tol = lmin # too small to constrict (i.e. 1 or 2 amino acid linkers)
     else:
-        tol = lmax - l + lmin # shrink to 1 AA length minimum
+        tol = lmax/2 + lmin#- l + lmin # shrink to 1 AA length minimum
 
     return l, tol
 
@@ -275,8 +275,7 @@ def domain_constraint(pdbs, fasta_parts, fasta_total):
     # I = constraint being defined between (last of chain A in top dimer, first of chain B in bottom dimer)
 
     # In principle, we could have any number of domains and linkers between the two dimer sites
-    cnt = 1 # count for fasta_parts array
-    x0 = 0; tol = 0 # prep x0 and tol for final returned distance information
+    tol = 0 # prep tol for final returned distance information
     for p in pdbs[1:-1]:
         P = bb.Molecule(p.split('.')[0] + '_cut.pdb')
 
@@ -289,17 +288,19 @@ def domain_constraint(pdbs, fasta_parts, fasta_total):
         last_resid = P.data["resid"].iloc[-1]
         start_cwd = P.atomselect("*", [first_resid], "CA") # x y z of last CA coordinate
         last_cwd = P.atomselect("*", [last_resid], "CA")
-        dist = np.linalg.norm(start_cwd - last_cwd)
+        x0 = np.linalg.norm(start_cwd - last_cwd) # base of x0 for dinal distance
 
         # now grab linker stats
-        l, lmax = get_linker_stats(fasta_parts[cnt][1])
-
-        # distance, x0, between domains is sum of linker span and domain sizes
-        x0 += dist + l
-        # tol is sum of lmax stats (slightly manipulated to accound for short linkers)
-        tol += lmax
-
-        cnt += 1
+        # loop through fasta_parts file (the bits between the dimer domains) and find all linkers
+        for f in fasta_parts[1:-1]:
+            if f[0][:7] == ">linker":
+                l, lmax = get_linker_stats(f[1])
+                # distance, x0, between domains is sum of linker span and domain sizes
+                x0 += l
+                # tol is sum of lmax stats (slightly manipulated to accound for short linkers)
+                tol += lmax
+            else:
+                continue
 
     # Finally, determine anchor points for constraint - see linker_constraint function for more commented information
     A = bb.Molecule(pdbs[0].split('.')[0] + '_cut.pdb'); B = bb.Molecule(pdbs[-1].split('.')[0] + '_cut.pdb')
@@ -380,9 +381,9 @@ for cnt, p in enumerate(pdb):
  
         fasta_tmp = fasta_M[1]
 
-        fasta_verbose.append([])
+        fasta_verbose.append(["",""])
         fasta_verbose.append(fasta_tmp)
-        fasta_verbose.append([])    
+        fasta_verbose.append(["",""])    
 
         # write all fasta
         fasta_tmp = fasta_tmp[1]    
@@ -397,7 +398,7 @@ for cnt, p in enumerate(pdb):
         extraSTART = extra_resid[d_idx][0][0]; extraEND = extra_resid[d_idx][0][1][:-1]
 
         if extraSTART != 'X':
-            if len(fasta_verbose[-3]) == 0:
+            if len(fasta_verbose[-3][1]) == 0:
                 fasta_verbose[-3] = ['>linker_%s'%(pdb_name), extraSTART]
                 all_fasta += extraSTART
             else:
@@ -409,11 +410,11 @@ for cnt, p in enumerate(pdb):
         all_fasta += fasta_tmp
 
         if extraEND != 'X':
-            if len(fasta_verbose[-1]) == 0:
+            if len(fasta_verbose[-1][1]) == 0:
                 fasta_verbose[-1] = ['>linker_%s'%(pdb_name), extraEND]
                 all_fasta += extraEND
             else:
-                fasta_verbose[-1] = fasta_verbose[-1][1] + extraEND 
+                fasta_verbose[-1][1] = fasta_verbose[-1][1] + extraEND 
                 all_fasta += fasta_verbose[-1][1] + extraEND 
         else:
             all_fasta += fasta_verbose[-1][1]
@@ -430,7 +431,7 @@ for cnt, p in enumerate(pdb):
     domain_count += 1
 
 # now, we want to move through and add linker regions if they are adjacent
-fasta_verbose = [x for x in fasta_verbose if x != []]
+fasta_verbose = [x for x in fasta_verbose if x != ["",""]]
 fasta_verbose_collapsed = []
 cnt = 0
 for i in range(len(fasta_verbose)-1):

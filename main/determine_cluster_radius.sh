@@ -14,25 +14,32 @@ while getopts ":R:" opt; do
       exit 1
       ;;
   esac
+done
+
+round() {
+  printf "%.${2}f" "${1}"
+}
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # first create a giant silent file from the output of the assembly stage
-cat output_scaffold/out*.silent > output_scaffold/combined.silent # do we need to remove non unique solutions - will effect clustering
+#cat output_scaffold/out*.silent > output_scaffold/combined.silent # do we need to remove non unique solutions - will effect clustering
 
 # run cluster on the silent output for 10 seconds before crashing and grepping radius from output
-$SCRIPT_DIR/cluster.sh $R output_scaffold/combined.silent -1 output_scaffold   &
+$SCRIPT_DIR/cluster.sh $R output_scaffold/combined_clean.silent -1 output_scaffold   &
 PID=$(echo $!)
-sleep 10
+sleep 180
 kill ${PID}
-big_radius=$(grep radius output_scaffold/clout)
+big_radius=$(grep --text radius output_scaffold/clout)
+echo "big radius size is $big_radius"
 
 # now run in parallel different cluster radius based on big radius - "50% to 80% of the radius used by "-1"."
 size_var=(0.5 0.533 0.567 0.6 0.633 0.667 0.7 0.733 0.767 0.8)
 
 for s in ${size_var[@]}; do
     rad=$(bc <<< "${big_radius} * ${s}")
-
+    num=$(round $rad 2) # round to 2 dp
+    mkdir output_scaffold/${num}
 done
 
 

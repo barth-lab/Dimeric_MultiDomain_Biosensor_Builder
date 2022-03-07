@@ -15,5 +15,5 @@ $1/source/bin/cluster.linuxgccdebug \
         -cluster:population_weight 1 \
         -cluster:sort_groups_by_energy \
         -cluster:write_centers \
-        > $4/clout \
-        2> $4/clerr
+        > ${4}/clout \
+        2> ${4}/clerr

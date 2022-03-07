@@ -88,7 +88,7 @@ if [ $S == 1 ]; then
 
     printf -v domains_str ' %s' "${domains_cut[@]}"
 
-    ${SCRIPT_DIR}/create_frags.sh $R
+    ${SCRIPT_DIR}/create_frags.sh -R $R
 
     echo "########  Protocol stage 1 complete #########"
     echo ""
@@ -96,7 +96,9 @@ if [ $S == 1 ]; then
     echo ">> Now run on the HPC mp_assembly_stage1.slurm with the following variables: "
     echo "TM=$T"
     echo "R=/home/dclw/rosetta20_glis/" # rosetta location with assembly protocol
-    echo "domains=$domains_str"
+    echo "domains="$domains_str""
+    echo ""
+    echo "Make sure to copy over the mp_assembly_stage1.slurm file into the run folder beforehand!"
     echo ""
     echo "##############################################"
 fi
