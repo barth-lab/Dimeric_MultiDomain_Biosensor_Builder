@@ -248,9 +248,9 @@ def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
         raise Exception("ERROR: There are %i repeat units for one of your domains we're calculating constraints between"%(len(A_end)))
     
     if len(B_start) == 2:
-        loc1 = B_start[1]
+        loc1 = B_start[1] + 1
     elif len(B_start) == 1:
-        loc1 = B_start[0]
+        loc1 = B_start[0] + 1
     else:
         raise Exception("ERROR: There are %i repeat units for one of your domains we're calculating constraints between"%(len(A_end)))
 
@@ -493,7 +493,7 @@ elif len(dimer_domains) > 1:
         if domain0 + 1 == domain1:
             # constraint determined by linkers
             # for pdb reference, indexing starts at zero, not 1 like the domain count
-            constraint_linker = linker_constraint(pdb[dimer_domains[d]-1], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
+            constraint_linker = linker_constraint(pdb[dimer_domains[d]-2], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
             constraint += constraint_linker
         elif domain0 + 1 < domain1:
             # constraint determined by hallucinated domains and linkers
