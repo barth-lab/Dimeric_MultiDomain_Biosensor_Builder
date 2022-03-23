@@ -6,9 +6,12 @@
 
 # run on fidis
 
+current=$(pwd)
 R=/home/dclw/rosetta20_glis/
-in_file=../filtered.silent
+in_file=${current}/../filtered.silent
 radius=$1
+
+echo ${current}
 
 $R/source/bin/cluster.linuxgccdebug \
         -database $R/database/  \

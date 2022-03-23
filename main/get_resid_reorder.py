@@ -111,7 +111,7 @@ def insert_resid(M, fasta):
         atomnames = { "ARG" : ["N", "CA", "C", "O", "CB", "CG", "CD", "NE", "CZ", "NH1", "NH2"],
                       "VAL" : ["N", "CA", "C", "O", "CB", "CG1", "CG2"],
                       "GLU" : ["N", "CA", "C", "O", "CB", "CG", "CD", "OE1", "OE2"],
-                      "THR" : ["N", "CA", "C", "O", "CB", "OG1", "OG2"],
+                      "THR" : ["N", "CA", "C", "O", "CB", "OG1", "CG2"],
                       "ALA" : ["N", "CA", "C", "O", "CB"],
                       "TYR" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "CE1", "CE2", "CZ", "OH"],
                       "TRP" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "NE1", "CE2", "CE3", "CZ2", "CZ3", "CH2"]}
@@ -133,7 +133,7 @@ def insert_resid(M, fasta):
                 atoms = atomnames[AA_knowledge[s]]
                 arr = np.asarray([["ATOM"] * len(atoms), np.arange(len(atoms)), atoms, 
                       [AA_knowledge[s]] * len(atoms), ["A"]*len(atoms), [p + cnt] * len(atoms),
-                      [1.0] * len(atoms), [0.0] * len(atoms), [""] * len(atoms), [1.0] * len(atoms)])
+                      [1.0] * len(atoms), [-1.0] * len(atoms), [""] * len(atoms), [1.0] * len(atoms)])
                 D = np.concatenate((D, arr.T), axis=0)
 
             D = D[1:] # remove placeholder
@@ -189,20 +189,55 @@ def insert_resid(M, fasta):
 
     return _insert_seq_(M, insert_positions, insert_seq)
 
+def create_loopfile(fasta, outname="loopfile"):
+    """
+    Create loopfile, e.g.:
+    LOOP   287  291    0  0.0  
+    LOOP  1205 1212    0  0.0  
+    Based on input fasta (tells rosetta where to add loops)
+    See https://www.rosettacommons.org/docs/latest/rosetta_basics/file_types/loops-file
+    """
+    chainA_fasta = fasta[0]
+    chainB_fasta = fasta[1]
+
+    # get the length of chainA so we know how much to shift B loop positions by
+    chainA_len = np.sum([len(x[1]) for x in chainA_fasta])
+
+    # move through len of fasta file to know resid positions to insert between
+    current_pos = 1 # resid numbering
+    insert_positions = []
+    for i, f in enumerate(chainA_fasta):
+        if f[0][:7] == ">linker":
+
+            # check whether insert position is in A or B to know exact position
+            if f[1] == "": # insert position in chain A
+                insert_positions.append([current_pos, current_pos + len(chainB_fasta[i][1])])
+                current_pos += len(chainB_fasta[i][1])
+            else:
+                insert_positions.append([current_pos + chainA_len, current_pos + chainA_len + len(f[1])])
+                current_pos += len(f[1])
+
+        else:
+            current_pos += len(f[1])
+
+    with open(outname, "w") as f:
+        for p in insert_positions:
+            f.write("LOOP  %4i %4i    0  0.0"%(p[0], p[1]))
+
 # get new resid idx based on needed reordering for linker fill in
 # need to know inital structure of input data (i.e. dimerisation domains etc.)
 parser = argparse.ArgumentParser(description='Input parameters for restructuring resid needed for loopmodel etc.')
 parser.add_argument('-s','--pdb', help='<Required> Input PDB structure to be reordered', required=True)
 parser.add_argument('-d', '--dimer', nargs='+', required=True, help='<Required> List of PDB domains that either dimerise or are participate in LBD (in order from EC to CT), starting from index 1 from domain 1. This needs to match the dimer input from the initial scaffold building, which determined how the PDB would be built at the time (essentially we are undoing that phase here).')
-parser.add_argument('-d', '--dimer', nargs='+', required=False, default=0, help='Order of PDB domains you need relative to verbose fasta (e.g. 2 1 4 3 means reorder as domain 2, then 1 etc.). Default of 0 means D1 D2 D3 etc. order of domains (just splitting by chains instead)')
+parser.add_argument('-o', '--order', nargs='+', required=False, default=0, help='Order of PDB domains you need relative to verbose fasta (e.g. 2 1 4 3 means reorder as domain 2, then 1 etc.). Default of 0 means D1 D2 D3 etc. order of domains (just splitting by chains instead)')
 parser.add_argument('-f','--fasta', help='<Required> Verbose fasta file created in the previous assembly stage', required=True)
 
 args = parser.parse_args()
 
 # testing
-pdb = "c.0.0.pdb" #str(args.pdb)
-dimer_domains = np.asarray([1, 2]) #np.asarray(args.dimer).astype(int)
-fasta_file= "/data/domain_construction/domain_assembly_constraints/CSF1R/assembly/run_new/input_scaffold/all_verbose.fasta" #str(args.fasta)
+pdb = str(args.pdb)
+dimer_domains = np.asarray(args.dimer).astype(int)
+fasta_file= str(args.fasta)
 
 #TODO how to deal with heterodimers?
 fasta = []
@@ -231,4 +266,7 @@ A.reorder_resid(new_idx)
 
 # insert resid at position in pandas dataframe
 S = insert_resid(A, fasta_newchain)
+S.write_pdb(pdb)
 
+# create loopfile for remodel
+create_loopfile(fasta_newchain)
