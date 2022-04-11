@@ -114,8 +114,20 @@ def insert_resid(M, fasta):
                       "THR" : ["N", "CA", "C", "O", "CB", "OG1", "CG2"],
                       "ALA" : ["N", "CA", "C", "O", "CB"],
                       "TYR" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "CE1", "CE2", "CZ", "OH"],
-                      "TRP" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "NE1", "CE2", "CE3", "CZ2", "CZ3", "CH2"]}
-
+                      "TRP" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "NE1", "CE2", "CE3", "CZ2", "CZ3", "CH2"],
+                      "ILE" : ["N", "CA", "C", "O", "CB", "CG1", "CG2", "CD1"], 
+                      "SER" : ["N", "CA", "C", "O", "CB", "OG"],
+                      "GLY" : ["N", "CA", "C", "O"],
+                      "HIS" : ["N", "CA", "C", "O", "CB", "CG", "ND1", "CD2", "CE1", "NE2"],
+                      "PRO" : ["N", "CA", "C", "O", "CB", "CG", "CD"],
+                      "LEU" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2"],
+                      "PHE" : ["N", "CA", "C", "O", "CB", "CG", "CD1", "CD2", "CE1", "CE2", "CZ"],
+                      "CYS" : ["N", "CA", "C", "O", "CB", "SG"],
+                      "LYS" : ["N", "CA", "C", "O", "CB", "CG", "CD", "CE", "NZ"],
+                      "ASP" : ["N", "CA", "C", "O", "CB", "CG", "OD1", "OD2"],
+                      "ASN" : ["N", "CA", "C", "O", "CB", "CG", "OD1", "ND2"],
+                      "MET" : ["N", "CA", "C", "O", "CB", "CG", "SD", "CE"], 
+                      "GLN" : ["N", "CA", "C", "O", "CB", "CG", "CD", "OE1", "NE2"]}
  
         # first, shift resid positions after pos by value of pos
         for i, p in enumerate(pos):

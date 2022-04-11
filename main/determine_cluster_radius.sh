@@ -37,13 +37,13 @@ $SCRIPT_DIR/cluster.sh $R $S -1
 #echo "big radius size is $big_radius"
 
 # now run in parallel different cluster radius based on big radius - "50% to 80% of the radius used by "-1"."
-#size_var=(0.5 0.533 0.567 0.6 0.633 0.667 0.7 0.733 0.767 0.8)
+size_var=(0.5 0.533 0.567 0.6 0.633 0.667 0.7 0.733 0.767 0.8)
 
-#for s in ${size_var[@]}; do
-#    rad=$(bc <<< "${big_radius} * ${s}")
-#    num=$(round $rad 2) # round to 2 dp
-#    mkdir ${num}
-#done
+for s in ${size_var[@]}; do
+    rad=$(bc <<< "${big_radius} * ${s}")
+    num=$(round $rad 2) # round to 2 dp
+    mkdir ${num}
+done
 
 # now run 10 parallel sessions of clustering to see what to ultimatly choose
 # at least 20 clusters... so arbitrary - this is something that really needs resolving (e.g. with DBSCAN)

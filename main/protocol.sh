@@ -14,9 +14,10 @@
 # optional flags need default values to avoid errors
 x=""
 a=""
+h="true"
 
 # define flags
-while getopts ":R:s:T:l:d:x:a:" opt; do
+while getopts ":R:s:T:l:d:x:a:h:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
@@ -44,6 +45,9 @@ while getopts ":R:s:T:l:d:x:a:" opt; do
       IFS=' '
       a=($OPTARG) 
       a="-a "${a[@]}"";; # avoid linker cutting domains
+    h)
+      h=$OPTARG # is the plan to run this on a HPC?
+      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -97,8 +101,13 @@ done
 printf -v domains_str ' %s' "${domains_cut[@]}"
 echo $domains_str
 
-# run round of first stage of assembly
-bash ${SCRIPT_DIR}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
+if [ "$h" == "true" ] ; then
+    echo "Now use the fasta file to create your own fasta fragments (e.g. using Robertta)"
+    echo "before running the mp_assembly on a HPC"    
+else
+    # run round of first stage of assembly
+    bash ${SCRIPT_DIR}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
+fi
 
 # need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
 

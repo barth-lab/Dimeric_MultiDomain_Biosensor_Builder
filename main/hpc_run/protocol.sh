@@ -14,9 +14,10 @@
 # optional flags need default values to avoid errors
 x=""
 a=""
+frags="true"
 
 # define flags
-while getopts ":R:s:T:l:d:x:a:S:" opt; do
+while getopts ":R:s:T:l:d:x:a:S:f:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
@@ -48,6 +49,10 @@ while getopts ":R:s:T:l:d:x:a:S:" opt; do
       IFS=' '
       a=($OPTARG) 
       a="-a "${a[@]}"";; # avoid linker cutting domains
+    f)
+      # make frag files?
+      frags=$OPTARG
+      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -88,11 +93,15 @@ if [ $S == 1 ]; then
 
     printf -v domains_str ' %s' "${domains_cut[@]}"
 
-    ${SCRIPT_DIR}/create_frags.sh -R $R
+    if [ $frags == "true" ]; then
+        ${SCRIPT_DIR}/create_frags.sh -R $R
+    fi
 
     echo "########  Protocol stage 1 complete #########"
     echo ""
-    echo ">> Check input_scaffold - fragments created, fastas, and constraints prepared."
+    echo ">> Check input_scaffold - fastas, and constraints prepared."
+    echo ">> If you requested fragments be built, these should be present also"
+    echo ">> Otherwise please produce them before continuing (e.g. with Robertta"
     echo ">> Now run on the HPC mp_assembly_stage1.slurm with the following variables: "
     echo "TM=$T"
     echo "R=/home/dclw/rosetta20_glis/" # rosetta location with assembly protocol

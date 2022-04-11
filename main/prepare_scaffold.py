@@ -239,7 +239,7 @@ def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
     fasta_d1 = pdb2fasta(B_sub, "tmp")[1] 
 
     # find the location of these in the larger fasta - we need the end of the first chain in domain0, and the start of the second chain in domains
-    # in case of slight mismatch in AA, check for size of lise
+    # in case of slight mismatch in AA, check for size of list
     A_end = [match.end() for match in re.finditer(fasta_d0, fasta_total)]
     B_start = [match.start() for match in re.finditer(fasta_d1, fasta_total)]
     if len(A_end) == 2 or len(A_end) == 1:
@@ -490,10 +490,11 @@ elif len(dimer_domains) > 1:
         else:
             fasta_idx1 = fasta_idx1[-1]
         # the range between these two fasta_idx are what we're interested in for the constraint definition     
+        print(domain0, domain1, pdb, dimer_domains[d]-1, dimer_domains[d+1]-1)
         if domain0 + 1 == domain1:
             # constraint determined by linkers
             # for pdb reference, indexing starts at zero, not 1 like the domain count
-            constraint_linker = linker_constraint(pdb[dimer_domains[d]-2], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
+            constraint_linker = linker_constraint(pdb[dimer_domains[d]-1], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
             constraint += constraint_linker
         elif domain0 + 1 < domain1:
             # constraint determined by hallucinated domains and linkers

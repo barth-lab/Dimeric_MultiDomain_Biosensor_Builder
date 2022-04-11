@@ -34,7 +34,7 @@ while getopts ":R:C:h:d:" opt; do
 done
 
 # normal usage;
-# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 4.62 -h false -d "1 2"
+# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 4.62 -h true -d "1 2"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
