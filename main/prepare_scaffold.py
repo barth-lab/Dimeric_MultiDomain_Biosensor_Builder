@@ -333,7 +333,7 @@ def domain_constraint(pdbs, fasta_parts, fasta_total):
 
 ##### INPUT ARGUMENTS #####
 parser = argparse.ArgumentParser(description='Input parameters for scaffold prep')
-parser.add_argument('-s','--pdb', nargs='+', help='<Required> List of PDB domains (in order from EC to CT) used for construction', required=True)
+parser.add_argument('-s','--pdb', nargs='+', help='<Required> List of PDB domains (in order from EC to CT) used for construction ideally with names like D1 D2 D3 etc., to make comprehension easier', required=True)
 parser.add_argument('-d', '--dimer', nargs='+', required=False, default=1, help='List of PDB domains that either dimerise or are participate in LBD (in order from EC to CT), starting from index 1 from domain 1. While not required, this is crucial for the generated constraint files')
 parser.add_argument('-a', '--linker_avoid', nargs='+', default=0, required=False, help='Domains to avoid saving linkers of in fasta file prior to loop reconstruction starting from index 1. Value equal 0 (default) assumes no domains will avoid linker cutting. Note you can still remove linkers with the linker position file, and potentially readd them with the extra linker option.')
 parser.add_argument('-l', '--linker_positions', required=True, help='<Required> Text file containing the position of the linkers to remove from the input domains. Each line in the file must correspond to an input domain, and four (eight for dimer) columns for start/end points of cutting region (example: 1 3 X X means resid 1-3 will be identified as starting linkers and removed at the start of the protein, while nothing will be removed at the end.) This file must have the same number of lines as domains. Resid positions must be with respect to input data.')

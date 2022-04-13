@@ -18,7 +18,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 declare -a commands
 
-for i in {1..144}
+for i in {1..100}
 do
     printf -v s "%03d" $i
 
