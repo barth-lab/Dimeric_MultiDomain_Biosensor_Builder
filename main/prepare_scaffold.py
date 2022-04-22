@@ -243,7 +243,7 @@ def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
     A_end = [match.end() for match in re.finditer(fasta_d0, fasta_total)]
     B_start = [match.start() for match in re.finditer(fasta_d1, fasta_total)]
     if len(A_end) == 2 or len(A_end) == 1:
-        loc0 = A_end[0] - 1 # -1 because this returns first element AFTER the match substring ends
+        loc0 = A_end[0]  # not +1 because this returns first element AFTER the match substring ends
     else:
         raise Exception("ERROR: There are %i repeat units for one of your domains we're calculating constraints between"%(len(A_end)))
     

@@ -32,7 +32,7 @@ do
                 -in:file:s $I/c.${j}.0.pdb \
                 -loop_file $I/loopfile \
                 -loops:frag_sizes 9 3 \
-                -loops:frag_files input_scaffold/frags.200.9mers input_scaffold/frags.200.3mers \
+                -loops:frag_files $I/frags.200.9mers $I/frags.200.3mers \
                 -loops:remodel quick_ccd \
                 -loops:refine refine_ccd \
                 -loops:relax no \
