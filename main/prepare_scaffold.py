@@ -196,7 +196,7 @@ def get_linker_stats(linker_fasta):
 
     return l, tol
 
-def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
+def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total, ligand=False):
     """
     The constraints will be obtained and then applied where no linkers are being added 
     and where we skip a domain. x0 is determined by the distance between C termini and N termini
@@ -228,7 +228,11 @@ def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
     A = bb.Molecule(pdb0.split('.')[0] + '_cut.pdb'); B = bb.Molecule(pdb1.split('.')[0] + '_cut.pdb')
 
     A.guess_chain_split() # split into A and B chains so we can access the monomeric unit we want
-    A_chainA = A.atomselect("A", "*", "*", get_index=True)[1]
+    # if there is a ligand present, it should be first - then we need to start with chain C instead of A (assuming dimer)
+    if ligand:
+        A_chainA = A.atomselect("C", "*", "*", get_index=True)[1]
+    else:
+        A_chainA = A.atomselect("A", "*", "*", get_index=True)[1]
     A_sub = A.get_subset(A_chainA)
     fasta_d0 = pdb2fasta(A_sub, "tmp")[1] 
 
@@ -256,7 +260,7 @@ def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total):
 
     return ["AtomPair CA %i CA %i FLAT_HARMONIC %f 1 %f\n"%(loc0, loc1, x0, tol)]
 
-def domain_constraint(pdbs, fasta_parts, fasta_total):
+def domain_constraint(pdbs, fasta_parts, fasta_total, ligand=False):
     """
     Apply constraints across domain gaps.
     """
@@ -306,7 +310,11 @@ def domain_constraint(pdbs, fasta_parts, fasta_total):
     A = bb.Molecule(pdbs[0].split('.')[0] + '_cut.pdb'); B = bb.Molecule(pdbs[-1].split('.')[0] + '_cut.pdb')
 
     A.guess_chain_split()
-    A_chainA = A.atomselect("A", "*", "*", get_index=True)[1]
+    # if there is a ligand present, it should be first - then we need to start with chain C instead of A (assuming dimer)
+    if ligand:
+        A_chainA = A.atomselect("C", "*", "*", get_index=True)[1]
+    else:
+        A_chainA = A.atomselect("A", "*", "*", get_index=True)[1]
     A_sub = A.get_subset(A_chainA)
     fasta_d0 = pdb2fasta(A_sub, "tmp")[1] 
 
@@ -338,6 +346,7 @@ parser.add_argument('-d', '--dimer', nargs='+', required=False, default=1, help=
 parser.add_argument('-a', '--linker_avoid', nargs='+', default=0, required=False, help='Domains to avoid saving linkers of in fasta file prior to loop reconstruction starting from index 1. Value equal 0 (default) assumes no domains will avoid linker cutting. Note you can still remove linkers with the linker position file, and potentially readd them with the extra linker option.')
 parser.add_argument('-l', '--linker_positions', required=True, help='<Required> Text file containing the position of the linkers to remove from the input domains. Each line in the file must correspond to an input domain, and four (eight for dimer) columns for start/end points of cutting region (example: 1 3 X X means resid 1-3 will be identified as starting linkers and removed at the start of the protein, while nothing will be removed at the end.) This file must have the same number of lines as domains. Resid positions must be with respect to input data.')
 parser.add_argument('-x', '--extra_linker', required=False, default=None, help='Text file containing the domain index and desired extra linker residues for START and END of domain, X = no extra residues (e.g. 2 KS X on a line corresponds to domain 2 getting KS extra linker at the start BEFORE the current linkers, and X (nothing in this case) AFTER the current linkers at the end of the domain). This can be applied to any domain.')
+parser.add_argument('-L', '--Ligand', required=False, default=False, help='Is there a ligand attached to the structure? Set value to True or 1 if yes. If so, please ensure this is FIRST in your PDB file, not last otherwise the domain assembly will auto attach to the ligand. This will affect also how the constraints are defined.')
 
 # notification on which are dimerisation/LBD domains
 args = parser.parse_args()
@@ -347,6 +356,7 @@ dimer_domains = np.asarray(args.dimer).astype(int)
 linker_avoid = np.asarray(args.linker_avoid).astype(int)
 linkers = str(args.linker_positions)
 extra_linkers = args.extra_linker
+user_ligand = args.Ligand
 
 ##### MAIN RUNCODE ######
 
@@ -473,6 +483,12 @@ elif len(dimer_domains) > 1:
 
     for d in range(len(dimer_domains) - 1): #  don't need constraint for last dimer domain
 
+        if d == 0:
+            # if a ligand is present, it'll be here (most likely), if not this will need editing
+            ligand = user_ligand
+        else:
+            ligand = False
+
         domain0 = dimer_domains[d]; domain1 = dimer_domains[d+1]
         pdb_name0 = pdb[dimer_domains[d]-1].split('.')[0]
         pdb_name1 = pdb[dimer_domains[d+1]-1].split('.')[0]
@@ -490,16 +506,15 @@ elif len(dimer_domains) > 1:
         else:
             fasta_idx1 = fasta_idx1[-1]
         # the range between these two fasta_idx are what we're interested in for the constraint definition     
-        print(domain0, domain1, pdb, dimer_domains[d]-1, dimer_domains[d+1]-1)
         if domain0 + 1 == domain1:
             # constraint determined by linkers
             # for pdb reference, indexing starts at zero, not 1 like the domain count
-            constraint_linker = linker_constraint(pdb[dimer_domains[d]-1], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
+            constraint_linker = linker_constraint(pdb[dimer_domains[d]-1], pdb[dimer_domains[d+1]-1], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta, ligand=ligand)
             constraint += constraint_linker
         elif domain0 + 1 < domain1:
             # constraint determined by hallucinated domains and linkers
             # no -1 because of python indexing
-            constraint_domain = domain_constraint(pdb[dimer_domains[d]-1 : dimer_domains[d+1]], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta)
+            constraint_domain = domain_constraint(pdb[dimer_domains[d]-1 : dimer_domains[d+1]], fasta_verbose_collapsed[fasta_idx0:fasta_idx1+1], all_fasta, ligand=ligand)
             constraint += constraint_domain
         else:
             raise Exception("ERROR: There is something strange about your domain index input, did you put the -d indexes in ascending order?")

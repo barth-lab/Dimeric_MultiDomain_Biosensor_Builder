@@ -15,9 +15,10 @@
 x=""
 a=""
 h="true"
+L="False"
 
 # define flags
-while getopts ":R:s:T:l:d:x:a:h:" opt; do
+while getopts ":R:s:T:l:d:x:a:h:L:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
@@ -32,6 +33,9 @@ while getopts ":R:s:T:l:d:x:a:h:" opt; do
       domains=($OPTARG) ;; # domain pdbs
     l) 
       l=$OPTARG # linker file (location of where to cut linkers)
+      ;;
+    L)
+      L=$OPTARG # is there a ligand attached ? 
       ;;
     d)
       set -f # disable glob
@@ -78,7 +82,7 @@ mkdir input_scaffold
 
 # read input domains from a file is probably easiest
 # Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
-${SCRIPT_DIR}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x}
+${SCRIPT_DIR}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x} -L ${L}
 
 mv cst input_scaffold/ 
 find -name "*_cut.pdb" -type f -exec mv -t input_scaffold/ {} +
@@ -107,7 +111,7 @@ printf -v domains_str ' %s' "${domains_cut[@]}"
 echo $domains_str
 
 if [ "$h" == "true" ] ; then
-    echo "Now use the fasta file to create your own fasta fragments (e.g. using Robertta)"
+    echo "Now use the fasta file to create your own fasta fragments (e.g. using https://robetta.bakerlab.org/fragmentsubmit.jsp)"
     echo "before running the mp_assembly on a HPC"    
 else
     # run round of first stage of assembly
