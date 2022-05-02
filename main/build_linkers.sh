@@ -5,7 +5,8 @@
 h="true"
 r=""
 o=0
-while getopts ":R:C:h:d:r:o:" opt; do
+l=0
+while getopts ":R:C:h:d:r:o:l:" opt; do
   case $opt in
     R)
       #echo "-R was triggered, Parameter: $OPTARG" >&2
@@ -32,8 +33,11 @@ while getopts ":R:C:h:d:r:o:" opt; do
       set -f
       IFS=' '
       o=($OPTARG) # reorder the domains into what order based on previous input (basically this needs to address missing domains, creating two unique chains)
-      # based on all_verbose.fasta in the last phase, what is the needed order here?
+      # based on all_verbose.fasta in the last phase, what is the needed order here? This will be larger than those number of domains with dimerisation domains
       ;; 
+    l)
+      l=$OPTARG # Position of the ligand in terms of the original all_verbose.fasta (most likely 1)
+      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -69,7 +73,7 @@ cp ./input_scaffold${r}/frags* ./${I}
 # Add in residues at the correct positions for rebuilding
 cnt=-1
 for i in ./${I}/c.*.0.pdb; do
-    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold${r}/all_verbose.fasta -o "${o[@]}" 
+    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold${r}/all_verbose.fasta -o "${o[@]}" -l $l
     tac ${i} | awk '/TER/ {if (f) next; f=1}1' | tac > tmp # remove duplicate TER lines
     mv tmp ${i}
     cnt=$(expr $cnt + 1)

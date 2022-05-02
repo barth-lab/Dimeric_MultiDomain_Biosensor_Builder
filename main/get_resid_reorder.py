@@ -5,16 +5,18 @@ import argparse
 import re
 import pandas as pd
 
-def get_reorder_resid(fasta, order, dimer):
+def get_reorder_resid(fasta, order, dimer, ligand=0):
     """
     Get the idx order to restructure an input PDB based on a fasta file (i.e. split dimers into two chains, and restructure from there)
     This also creates a new verbose fasta file based on the updated topology
     :param fasta: input verbose fasta file to reorder based on dimer domain sites
     :param order: order to place domains based on all_verbose.fasta (e.g. D4 D3 D2 D1 D5 etc.)
     :param dimer: dimerisation indices from the fasta file to base chain designations off
+    :param ligand: Domain that a ligand is attached to (will treat the fasta differently if so) - should be start of fasta by definition from previous stages.
     """
     dimer = dimer - 1 # start counting domains from 1 (so need to count from 0 here)
     order = order - 1
+    ligand -= 1
     fasta_chainA = []
     fasta_chainB = []
     reorder_residA = []
@@ -24,7 +26,7 @@ def get_reorder_resid(fasta, order, dimer):
     shift= 0 # linker shift (i.e. based on linker presence in fasta)
     chainA = True # are we transversing chain A right now?
 
-    # first thing, split the dimerisation domain into two
+    # first thing, split the dimerisation domains into two - this doesn't really work through if we have a ligand attached
     fasta_new = []
     cnt = 0
     for f in fasta:
@@ -33,9 +35,19 @@ def get_reorder_resid(fasta, order, dimer):
         else:
             if np.any(dimer == cnt):
                 # split this domain
-                f_split = int(len(f[1]) / 2)
-                fasta_new.append([f[0]+"_A", f[1][:f_split]])
-                fasta_new.append([f[0]+"_B", f[1][f_split:]])
+                if cnt == ligand:
+                    # ligand present (at start of fasta) - remove this first. Assume the ligand is a dimer (if it isn't, we need to reassess)
+                    # also what if ligand on two non dimerising domains?
+                    start = f[1][:12] # matching sequence for ligand using first 12 AA
+                    ligand_len = [match.end() for match in re.finditer(start, f[1])][1] - 12
+                    f_nonligand = f[1][2*ligand_len:] # skip over both monomeric units in ligand
+                    f_split = int(len(f_nonligand) / 2)
+                    fasta_new.append([f[0]+"_A", f[1][:f_split + ligand_len*2]]) # include the ligand here
+                    fasta_new.append([f[0]+"_B", f_nonligand[f_split:]])
+                else:
+                    f_split = int(len(f[1]) / 2)
+                    fasta_new.append([f[0]+"_A", f[1][:f_split]])
+                    fasta_new.append([f[0]+"_B", f[1][f_split:]])
                 cnt += 1
             else:
                 fasta_new.append(f)
@@ -64,8 +76,6 @@ def get_reorder_resid(fasta, order, dimer):
             #fasta_record += len(fasta[1])
             if len(f) == 3: # a linker is present
                 fasta_chainA.append([f[2][0] + "_A", f[2][1]])
-                #reorder_residA.append(np.arange(len(fasta[2][1])) + fasta_record)
-                #fasta_record += len(fasta[2][1])
 
             # check if we need to switch to chain B
             if cnt+1 == int(len(order)/2):
@@ -73,14 +83,8 @@ def get_reorder_resid(fasta, order, dimer):
         else:
             fasta_chainB.append([f[0] + "_B", f[1]])
 
-            #reorder_residB.append(np.arange(len(fasta[1])) + fasta_record)
-            #fasta_record += len(fasta[1])
             if len(f) == 3: # a linker is present
                 fasta_chainB.append([f[2][0] + "_B", f[2][1]])
-                #reorder_residB.append(np.arange(len(fasta[2][1])) + fasta_record)
-                #fasta_record += len(fasta[2][1])
-
-
 
     # for now (for CSF1R) assume order is always from top to bottom - but this will need to be addressed later
     #for i in range(len(fasta)): # can't move through via order and shift based on linker (screws up ordering) - #TODO fix this
@@ -243,20 +247,23 @@ def insert_resid(M, fasta_newchain):
     # move through len of fasta file to know resid positions to insert between
     insert_positions = []
     insert_seq = []
-    current_pos = 1 # resid numbering
+    current_posA = 1 # resid numbering
+    current_posB = 1 # need different numbering in case the sequences are different
     shift=0
-    for cnt, f in enumerate(chainA_fasta): # which ever (A or B is longer should be the one we loop through)
+    for cnt, f in enumerate(chainA_fasta): # loop through whatever chain is longer (or the same length)
         if f[0][:7] == ">linker":
-            
+
             # check whether same is also true of chain B, if not we need to insert here!
             # check whether insert position is in A or B to know exact position
             if chainB_fasta[cnt-shift][0][:7] != ">linker": # insert here!
-                insert_positions.append(current_pos + chainA_len)
+                insert_positions.append(chainA_len + current_posB)
                 insert_seq.append(f[1])
-                current_pos += len(f[1])
+                #current_pos += len(f[1])
                 shift += 1
-            else:
-                current_pos += len(chainB_fasta[cnt][1])
+            #else:
+                #current_pos += len(chainB_fasta[cnt][1])
+            current_posA += len(f[1])
+            current_posB += len(f[1])
 
         #    if f[1] == "": # insert position in chain A
         #        insert_positions.append(current_pos)
@@ -267,8 +274,19 @@ def insert_resid(M, fasta_newchain):
         #        insert_seq.append(f[1])
         #        current_pos += len(f[1])
 
+        elif chainB_fasta[cnt-shift][0][:7] == ">linker": # no linker on chain A but linker on chain B
+            insert_positions.append(current_posA)
+            insert_seq.append(chainB_fasta[cnt-shift][1])
+            current_posA += len(chainB_fasta[cnt-shift][1])
+            current_posB += len(chainB_fasta[cnt-shift][1])
+            chainA_len += len(chainB_fasta[cnt-shift][1]) # add to this total length also since this extends the length of A
+            shift -= 1
+            # this effectively triggers a skip of chainA since we not accounting for any indexing drift there, so we need to add in the length of the missing domain we're skipping over
+            current_posA += len(f[1])
+            current_posB += len(chainB_fasta[cnt-shift][1])
         else:
-            current_pos += len(f[1])
+            current_posA += len(f[1])
+            current_posB += len(chainB_fasta[cnt-shift][1])
 
     return _insert_seq_(M, insert_positions, insert_seq), insert_positions, insert_seq
 
@@ -318,16 +336,16 @@ parser.add_argument('-s','--pdb', help='<Required> Input PDB structure to be reo
 parser.add_argument('-d', '--dimer', nargs='+', required=True, help='<Required> List of PDB domains that either dimerise or are participate in LBD (in order from EC to CT), starting from index 1 from domain 1. This needs to match the dimer input from the initial scaffold building, which determined how the PDB would be built at the time (essentially we are undoing that phase here).')
 parser.add_argument('-o', '--order', nargs='+', required=False, default=0, help='Order of PDB domains you need relative to verbose fasta (e.g. 2 1 4 3 means reorder as domain 2, then 1 etc.). Default of 0 means D1 D2 D3 etc. order of domains in verbose_fasta')
 parser.add_argument('-f','--fasta', help='<Required> Verbose fasta file created in the previous assembly stage', required=True)
+parser.add_argument('-l', '--ligand', default=0, required=False, help='Is there a ligand present? If so, which domain is it attached to?')
 
 args = parser.parse_args()
 
 # To run this correctly then, one needs to take a look at all_verbose.fasta to base their decisions on order and dimerisation
-
-# testing
 pdb = str(args.pdb)
 # dimer domain means domains where we still need to split, with respect to the input all_verbose.fasta
 dimer_domains = np.asarray(args.dimer).astype(int)
 fasta_file= str(args.fasta)
+ligand=int(args.ligand)
 
 # order needs to correspond with the number of domains (NOT linkers) present in the all_verbose.fasta so we know how to reorder
 # it also needs to know that the dimer array will split some of the domains in two (so you need to shift the new ordering after that point)
@@ -351,6 +369,27 @@ fasta_file= str(args.fasta)
 #ISLVTALHLVLGLSAVLGLLLL
 # D1 is the dimerisation domain remaining
 
+# alternatively, say all_verbose.fasta looks like:
+#>D13
+#EGICRNRVTNNVKDVTKLVANLPKDYMITLKYVPGMDVLPSHCWISEMVVQLSDSLTDLLDKFSNISEGLSNYSIIDKLVNIVDDLVECVKENSSKDLKKSFKSPEPRLFTPEEFFRIFNRSIDAFKDFVVASETSDCVVEGICRNRVTNNVKDVTKLVANLPKDYMITLKYVPGMDVLPSHCWISEMVVQLSDSLTDLLDKFSNISEGLSNYSIIDKLVNIVDDLVECVKENSSKDLKKSFKSPEPRLFTPEEFFRIFNRSIDAFKDFVVASETSDCVVEPSPPSIHPGKSDLIVRVGDEIRLLCTDPGFVKWTFEILDETNENKQNEWITEKAEATNTGKYTCTNKHGLSNSIYVFVRDPAKLFLVDRSLYGKEDSDTLVRCPLTDPEVTSYSLKGCQGKPLPKDLRFIPDPKAGIMIKSVKRAYHRLCLHCSVDQEGKSVLSEKFILKVRPAFKAVPVVSVSKASYLLREGEEFTVTCTIKDVSSSVYSTWKRENSQTKLQEKYNSWHHGDFNYERQATLTISSARVNDSGVFMCYANNTFGSANVTTTLEVVEPSPPSIHPGKSDLIVRVGDEIRLLCTDPGFVKWTFEILDETNENKQNEWITEKAEATNTGKYTCTNKHGLSNSIYVFVRDPAKLFLVDRSLYGKEDSDTLVRCPLTDPEVTSYSLKGCQGKPLPKDLRFIPDPKAGIMIKSVKRAYHRLCLHCSVDQEGKSVLSEKFILKVRPAFKAVPVVSVSKASYLLREGEEFTVTCTIKDVSSSVYSTWKRENSQTKLQEKYNSWHHGDFNYERQATLTISSARVNDSGVFMCYANNTFGSANVTTTLEVV
+#>linker_D13
+#DKG
+#>D45
+#FINIFPMINTTVFVNDGENVDLIVEYEAFPKPEHQQWIYMNRTFTDKWEDYPKSENESNIRYVSELHLTRLKGTEGGTYTFLVSNSDVNAAIAFNVYVNTKPEILTYDRLVNGMLQCVAAGFPEPTIDWYFCPGCSASVLPVDVQTLNSSGPPFGKLVVQSSIDSSAFKHNGTVECKAYNDVGKTSAYFNFAFINIFPMINTTVFVNDGENVDLIVEYEAFPKPEHQQWIYMNRTFTDKWEDYPKSENESNIRYVSELHLTRLKGTEGGTYTFLVSNSDVNAAIAFNVYVNTKPEILTYDRLVNGMLQCVAAGFPEPTIDWYFCPGCSASVLPVDVQTLNSSGPPFGKLVVQSSIDSSAFKHNGTVECKAYNDVGKTSAYFNFA
+#>linker_D7
+#RVETATETAW
+#>D7
+#ISLVTALHLVLGLSAVLGLLLLISLVTALHLVLGLSAVLGLLLL
+#
+# 1 O - O 2
+#    \ /
+#  4 OO 3
+#    ||
+#  5 OO 6 
+# Numbers indicate domain trajectory in terms of counting
+#
+# They are all dimerisation domains, and you want to fill in just the linkers. Order would look like [1, 4, 5, 2, 3, 6] (note 1 will have a ligand attached if present)
+
 #TODO how to deal with heterodimers?
 fasta = []
 with open(fasta_file, "r") as f:
@@ -371,7 +410,7 @@ with open(fasta_file, "r") as f:
     else:
         order = np.asarray(args.order).astype(int)
 
-new_idx, fasta_newchain = get_reorder_resid(fasta, order, dimer_domains)
+new_idx, fasta_newchain = get_reorder_resid(fasta, order, dimer_domains, ligand)
 # now load in PDB and reorder metadata, and add in missing linkers in the correct place
 A = bb.Molecule(pdb)
 A.reorder_resid(new_idx)

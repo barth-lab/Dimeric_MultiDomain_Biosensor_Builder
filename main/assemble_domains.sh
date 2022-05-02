@@ -15,7 +15,7 @@
 h="true"
 
 # define flags
-while getopts ":R:s:T:d:c:p:" opt; do
+while getopts ":R:s:T:d:C:p:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
@@ -32,8 +32,8 @@ while getopts ":R:s:T:d:c:p:" opt; do
       set -f # disable glob
       IFS=' ' # split on space characters
       d=($OPTARG) ;; # dimerisation sites
-    c) 
-      c=$OPTARG # cluster center to continue assembly from
+    C) 
+      C=$OPTARG # cluster center to continue assembly from
       ;;
     p) 
       p=$OPTARG # position of the domain(s) being added - upgrade to include more domains
@@ -50,7 +50,7 @@ while getopts ":R:s:T:d:c:p:" opt; do
 done
 
 # example of this script being run
-# bash /data/domain_construction/domain_assembly_constraints/main/assemble_domains.sh -R /data/rosetta20_glis -T 3 -d "1 3" -p 2 -c 7.89 -s "D2.pdb c.0.0.pdb"
+# bash /data/domain_construction/domain_assembly_constraints/main/assemble_domains.sh -R /data/rosetta20_glis -T 3 -d "1 3" -p 2 -C 7.89 -s "D2.pdb c.0.0.pdb"
 
 # current script location
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -65,7 +65,7 @@ name=$(echo "${domains[0]}" | cut -d'.' -f1)
 
 set +o noglob
 cp ../input_scaffold/${name}_cut.pdb .
-cp ../output_scaffold/${c}/c.*.0.pdb .
+cp ../output_scaffold/${C}/c.*.0.pdb .
 # copy frag files for linker insertion during domain assembly
 cp ../input_scaffold/*frags* .
 # any of the cluster centers will work for the constraint and fasta files, since sequence wise they are identical
@@ -86,13 +86,8 @@ else
 fi
 
 # need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
-
 # run domain assembly with constraints - building from top to bottom (EC to CT)
-
 # cluster
-
 # run linker design
-
-# cluster?
-
+# cluster
 # select from miminum energy, and repear
