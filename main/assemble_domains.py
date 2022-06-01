@@ -63,7 +63,7 @@ def linker_span(fasta):
     :param fasta: Input fasta (str) of linker
     """
 
-    lmin = 3.8 # Ang.
+    lmin = 3.0 # Ang.
     lmode= 12.7 # Ang.
     lmax = linker_max_span(fasta)
 
@@ -92,7 +92,7 @@ def get_linker_stats(linker_fasta):
     Get the span length (x0 for constraint, l) and maximum span length (tol for constraint, lmax) of linker
     :param linker_fasta: string of linker sequence
     """
-    lmin = 3.8 # Ang.
+    lmin = 3.0 # Ang.
 
     lmax = linker_max_span(linker_fasta)
     l = linker_span(linker_fasta) # x0
@@ -101,7 +101,7 @@ def get_linker_stats(linker_fasta):
         # to bring in line with previous work, increase by lmin
         tol = lmin # too small to constrict (i.e. 1 or 2 amino acid linkers)
     else:
-        tol = lmax - l + lmin # shrink to 1 AA length minimum
+        tol = lmax - l # shrink to 1 AA length minimum
 
     return l, tol
 

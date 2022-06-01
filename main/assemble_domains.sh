@@ -36,7 +36,7 @@ while getopts ":R:s:T:d:C:p:" opt; do
       C=$OPTARG # cluster center to continue assembly from
       ;;
     p) 
-      p=$OPTARG # position of the domain(s) being added - upgrade to include more domains
+      p=$OPTARG # current (i.e. prior to assembly) position of the domain(s) being added - upgrade to include more domains
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2

@@ -24,7 +24,7 @@ while getopts ":R:C:h:d:r:o:l:" opt; do
     d)
       set -f # disable glob
       IFS=' ' # split on space characters
-      d=($OPTARG) ;; # dimerisation sites
+      d=($OPTARG) ;; # dimerisation sites in terms of input all_verbose.fasta
     r)
       r=$OPTARG # what round are we building from (e.g. if we needed intermediate stages to include domains)
       # this needs to be _2 or whatever (not just 2)
@@ -36,7 +36,7 @@ while getopts ":R:C:h:d:r:o:l:" opt; do
       # based on all_verbose.fasta in the last phase, what is the needed order here? This will be larger than those number of domains with dimerisation domains
       ;; 
     l)
-      l=$OPTARG # Position of the ligand in terms of the original all_verbose.fasta (most likely 1)
+      l=$OPTARG # Position of the ligand in terms of the previous all_verbose.fasta (most likely 1)
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -52,6 +52,11 @@ done
 # normal usage
 # dimer domains needs to now be just the domain that is still treated as a dimer (i.e. two repeating sequneces)
 # bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 7.29 -d "3" -r _2 -o "4 5 6 3 1 2"
+# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 6.25 -d "1 2 3" -o "1 4 5 2 3 6" -l 1
+# SCF extra linker final stage:
+# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 1.1 -d "3 4" -o "3 6 7 8 4 5 1 2" -l 3 -r _2
+
+# This script needs to be run from the run folder
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 

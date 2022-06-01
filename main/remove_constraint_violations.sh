@@ -5,21 +5,22 @@
 cat out*silent > combined.silent
 
 ######## 23/04/22 constraints are often violated with these harder problems... don't clean?
-#grep SCORE combined.silent > tmp.tag
-# less than 1 for constraint for a small amount of leeway
-#awk '$17<1' tmp.tag | awk '{print $NF}' > score.tag
-#rm tmp.tag
+# We should always take non-violating structures UNLESS there is a significant lack of them
+grep SCORE combined.silent > tmp.tag
+# less than 1 for constraint for a tiny amount of leeway/machine error
+awk '$17<1' tmp.tag | awk '{print $NF}' > score.tag
+rm tmp.tag
 
 # now extract from silent file, the lines we want given by tag - this includes mem energies we need
 # first copy first three lines
-#head -n 3 combined.silent >> combined_clean.silent
-#while read p; do
-#    grep $p combined.silent >> combined_clean.silent
-#done < score.tag
+head -n 3 combined.silent >> combined_clean.silent
+while read p; do
+    grep $p combined.silent >> combined_clean.silent
+done < score.tag
 
-# now filter to extract the top 10 % of structures
-#grep SCORE combined_clean.silent > clean_scores.sc
-grep SCORE combined.silent > clean_scores.sc
+# now filter to extract the top 10 % of structures (this may bias the method, is it better to take diversified structures?)
+grep SCORE combined_clean.silent > clean_scores.sc
+#grep SCORE combined.silent > clean_scores.sc
 awk '!/ref/' clean_scores.sc > temp && mv temp clean_scores.sc
 
 # get length of file (to know how many approx 10% represent)
