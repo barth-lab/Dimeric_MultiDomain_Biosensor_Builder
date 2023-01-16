@@ -219,7 +219,10 @@ def insert_resid(M, fasta_newchain):
             df = df.astype({cols[0]: str, cols[1]: int, cols[2]: str, cols[3]: str, cols[4]: str,
                             cols[5]: int, cols[6]: float, cols[7]: float, cols[8]: str, cols[9]: float})
             # create coordinates
-            cwd = np.zeros((1, df.shape[0], 3))
+            # don't use zeros for coordinates because of potential rosetta errors https://www.rosettacommons.org/node/3837
+            # use the centre of mass for the protein
+            COM = M.get_center()
+            cwd = np.ones((1, df.shape[0], 3)) * COM + np.random.rand(1, df.shape[0], 3)
         
             # get the index just before the insert position, and use as index basis for insertion
             idx = M.data[M.data["resid"] == p - 1].iloc[-1].name + 1

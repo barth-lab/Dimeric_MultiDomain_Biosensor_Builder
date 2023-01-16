@@ -5,7 +5,7 @@ round() {
 }
 size_var=(0.5 0.533 0.567 0.6 0.633 0.667 0.7 0.733 0.767 0.8)
 
-big_radius=14.575
+big_radius=${1}
 
 loc=$(pwd)
 

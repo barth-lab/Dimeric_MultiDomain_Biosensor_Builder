@@ -303,6 +303,7 @@ if len(pdb) == 2:
 
     # Now use the new resid positions to rejuggle the pdb metadata
     new_idx = np.concatenate(resid_cnt)
+    A.data["chain"] = "A" # set all to A so the reordering works as expected
     A.reorder_resid(new_idx)
     A.write_pdb(pdb[1])
 

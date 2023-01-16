@@ -39,4 +39,4 @@ while read p; do
     #grep $p combined_clean.silent >> filtered.silent
 done < filtered_scores.tag
 
-bash /data/domain_construction/domain_assembly_constraints/main/determine_cluster_radius.sh -R /data/rosetta20_glis/ -S filtered.silent
+#bash /data/domain_construction/domain_assembly_constraints/main/run_clustering.sh -R /data/rosetta20_glis/ -S filtered.silent

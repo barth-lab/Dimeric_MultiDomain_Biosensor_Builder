@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --time 12:00:00 -n 1
-#SBATCH --array=1-144
+#SBATCH --time 2-12:00:00 -n 1
+#SBATCH --array=1-100
 #SBATCH --cpus-per-task=1
 #SBATCH --output slurm.out
 #SBATCH --error slurm.err

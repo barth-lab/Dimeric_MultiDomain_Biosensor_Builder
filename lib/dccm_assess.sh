@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# N.B. this script needs to be run on barth2 server for correct paths
+
 export LD_LIBRARY_PATH="/home/chatzi/Coupl_Ros/ROSETTA.v.3.10_Raj/main/source/build/src/release/linux/5.8/64/x86/gcc/9/default:$LD_LIBRARY_PATH"
 R="/home/chatzi/Coupl_Ros/ROSETTA.v.3.10_Raj"
 DCCM="${R}/main/source/bin/dccm_wensel.mpi.linuxgccrelease"

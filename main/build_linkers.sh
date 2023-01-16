@@ -36,7 +36,7 @@ while getopts ":R:C:h:d:r:o:l:" opt; do
       # based on all_verbose.fasta in the last phase, what is the needed order here? This will be larger than those number of domains with dimerisation domains
       ;; 
     l)
-      l=$OPTARG # Position of the ligand in terms of the previous all_verbose.fasta (most likely 1)
+      l=$OPTARG # Position of the ligand in terms of the previous all_verbose.fasta (most likely 1). Only include if there is a ligand of course!
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -54,7 +54,7 @@ done
 # bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 7.29 -d "3" -r _2 -o "4 5 6 3 1 2"
 # bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 6.25 -d "1 2 3" -o "1 4 5 2 3 6" -l 1
 # SCF extra linker final stage:
-# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 1.1 -d "3 4" -o "3 6 7 8 4 5 1 2" -l 3 -r _2
+# bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 8.09 -d "3 4" -o "3 6 7 8 4 5 1 2" -l 3 -r _2
 
 # This script needs to be run from the run folder
 

@@ -1,12 +1,17 @@
 #!/bin/bash
 
-while getopts ":R:S:" opt; do
+# optional flags need default values to avoid errors
+C="-1"
+while getopts ":R:S:C:" opt; do
   case $opt in
     R)
       R=$OPTARG # rosetta location
       ;;
     S)
       S=$OPTARG # silent file input
+      ;;
+    C)
+      C=$OPTARG # cluster radius size
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2

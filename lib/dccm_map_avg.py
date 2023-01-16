@@ -1,42 +1,31 @@
 """
 Assess the dccm extracted from Rosetta and put in heatmap to demonstrate connectivity
+Average across all dccm maps present in the folder
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-import matplotlib as mpl 
-import matplotlib.colors as mcol
-import matplotlib.cm as cm
+import sys, os
 
-def create_discrete_heatmap(data):
-    """
-    Create a discrete heatmap of coupling to match with the manuscript figures
-    """
-    fig, ax = plt.subplots(figsize=(8, 6), dpi=150)
 
-    # create discrete heatmap
-    bounds=[-1, -0.714, -0.429, -0.143, 0.143, 0.429, 0.714, 1]
-    # digitisation pushes results forward because of binning
-    iratio = np.digitize(data.flat, bounds).reshape(data.shape) -1
-    iratio = np.flip(iratio, axis=0)
-    
-    # create cmap with correct colours versus paper
-    colours=["#0101cfff", "#077efcff", "#9ccbffff", "#ffffffff", "#fdfe9aff", "#ff9936ff", "#c90101ff"]
-    cmap = mpl.colors.ListedColormap(colours) # 7 discrete colors
-    cmap = cm.get_cmap(cmap, lut=len(bounds))
-    cmap_bounds = np.arange(len(bounds))
-    norm = mcol.BoundaryNorm(cmap_bounds, cmap.N)
+absolute = sys.argv[1] if len(sys.argv) >= 2 else False
 
-    # plot
-    map_plot = plt.pcolormesh(iratio, cmap=cmap, norm=norm)
-    cbar = plt.colorbar(map_plot, ticks=[0,1,2,3,4,5,6,7], orientation="vertical")
-    cbar.set_ticklabels(["-1", "-0.71", "-0.43", "-0.14", "0.14", "0.43", "0.71", "1"])
+path = os.getcwd()
+directory = os.fsencode(path)
+DCCM = []
+for file in os.listdir(directory):
+    filename = os.fsdecode(file)
+    if filename.endswith(".dccm"):
+        data = np.loadtxt(filename, dtype=float)
+        if absolute:
+            data = np.abs(data) # take the absolute value to just check for correlations
+        DCCM.append(data)
+DCCM = np.mean(DCCM, axis=0)
 
-    return fig, ax, cbar
+np.savetxt("DCCM_avg.txt", DCCM)
 
-filename=str(sys.argv[1])
-domains_file=str(sys.argv[2])
+"""
+#domains_file=str(sys.argv[1])
 
 # domains should contain the name and resid positions of each domain you want to add into the image
 domains_txt = np.loadtxt(domains_file, dtype=str)
@@ -46,19 +35,17 @@ for D in domains_txt:
     # these are pdb numbers, not python numbers
     domains.append([D[0], int(D[1]), int(D[2])])
 
-data = np.loadtxt(filename, dtype=float)
+# PLOTTING #
+fig, ax = plt.subplots(figsize=(8, 6), dpi=150)
+im = ax.imshow(DCCM, cmap='hot', interpolation='nearest')
 
-fig, ax, cbar = create_discrete_heatmap(data)
-
-#im = ax.imshow(data, cmap='hot', interpolation='nearest')
-
-#cbar = plt.colorbar(im)
+cbar = plt.colorbar(im)
 cbar.set_label('DCCM', rotation=270)
 
 ax.axes.get_xaxis().set_visible(False)
 ax.axes.get_yaxis().set_visible(False)
 
-no_resid = len(data)
+no_resid = len(DCCM)
 
 # get figure metadata for arrow width
 bbox = ax.get_window_extent()
@@ -85,3 +72,4 @@ for D in domains:
  
 #plt.savefig("test.png")
 plt.show()
+"""
