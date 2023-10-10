@@ -1,3 +1,0 @@
-SEQUENCE: 
-SCORE: total_score angle_constraint atom_pair_constraint coordinate_constraint dihedral_constraint dslf_ca_dih dslf_cs_ang dslf_ss_dih dslf_ss_dst      fa_atr      fa_dun fa_intra_rep     fa_mpenv fa_mpenv_smooth fa_mpsolv   fa_pair    fa_rep hbond_bb_sc hbond_lr_bb    hbond_sc hbond_sr_bb       omega     p_aa_pp pro_close      rama       ref description 
-SCORE:    7358.045            0.000                1.486                 0.000               0.000       0.000       0.000       0.000       0.000   -1938.729     781.047        4.806       40.297         -34.415   405.290   -20.090  8127.964     -34.918    -186.849     -18.033    -101.888     368.459     -12.199     7.711    12.085   -43.980 S_0001

@@ -1,15 +1,7 @@
 #!/bin/bash
-
 # author: Lucas Rudden
 
-# Here I want to write out the entire protocol of the modified approach to domain assembly
-# Assembly procotol is essentially domain assemble (with constraints), clustered and then taken further for assembly rounds
-# Construction always needs to occur down (i.e. towards cytoplasm)
-
-# Note that static vs mpi vs nothing in linux rosetta commands
-
-# https://stackoverflow.com/questions/14447406/bash-shell-script-check-for-a-flag-and-grab-its-value
-# https://archive.is/TRzn4
+# prepare the initial scaffold for running the domain assembly protocol
 
 # optional flags need default values to avoid errors
 x=""
@@ -18,11 +10,8 @@ h="true"
 L="False"
 
 # define flags
-while getopts ":R:s:T:l:d:x:a:h:L:" opt; do
+while getopts ":s:T:l:d:x:a:L:" opt; do
   case $opt in
-    R)
-      R=$OPTARG # rosetta location
-      ;;
     T)
       TM=$OPTARG # which input domain corresponds to the TM region
       ;;
@@ -35,7 +24,7 @@ while getopts ":R:s:T:l:d:x:a:h:L:" opt; do
       l=$OPTARG # linker file (location of where to cut linkers)
       ;;
     L)
-      L=$OPTARG # is there a ligand attached ? 
+      L=$OPTARG # is there a ligand attached? 
       ;;
     d)
       set -f # disable glob
@@ -49,9 +38,6 @@ while getopts ":R:s:T:l:d:x:a:h:L:" opt; do
       IFS=' '
       a=($OPTARG) 
       a="-a "${a[@]}"";; # avoid linker cutting domains
-    h)
-      h=$OPTARG # is the plan to run this on a HPC?
-      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -66,22 +52,19 @@ done
 # current script location
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
+# make run folder - assigns UNIX timestamp to name
 D=`date +"%s"`
 mkdir run${D}
 cp "${domains[@]}" ${l} ${x} run${D}/
 cd run${D}
 mkdir input_scaffold
-#cd run1645438828/
 
-# for each input domain, check if it's a dimer (to see where crossing points need to be for design) - note, this need to avoid checking for ligand!
-# FOr now this can be done by seeing if its a homodimer (how to do heterodimers later?)
-# Then we need to remove the linkers (but include within fasta)
-# then we need to build the fragment database
-# THen we run domain assembly
+# prepare scaffold does the following (EC to IC):
+# 1) For each input domain, check if it's a dimer (to see where crossing points need to be for design) - hence you need to notify where the ligand is with L
+# For now this this means we're limited only to homodimers, if you want to extend it you'll need a clever way of auto-identifying whether it is a dimer (or do everything by hand)
+# 2) Removes the linkers based on above arguments (but include them in fasta)
+# 3) Prepares topology of input PDBs and writes to all files needed for assembly other than the fragment files
 
-# read input domains from a file is probably easiest
-# Starting scaffold needs the start and end points included (i.e. EC head to CT region) to build inial scaffold. This is based on the input domains
 ${SCRIPT_DIR}/prepare_scaffold.py -s "${domains[@]}" -d "${d[@]}" -l ${l} ${a} ${x} -L ${L}
 
 mv cst input_scaffold/ 
@@ -103,18 +86,10 @@ for s in input_scaffold/*_cut.pdb; do
     mv tmp ${s}
 done
 
-# CTER error usually because of an absence of OXT
-# also need a way of including the OXT at the end of the final TM...
-# run idealise?
-
 printf -v domains_str ' %s' "${domains_cut[@]}"
 echo $domains_str
 
-if [ "$h" == "true" ] ; then
-    echo "Now use the fasta file to create your own fasta fragments (e.g. using https://robetta.bakerlab.org/fragmentsubmit.jsp)"
-    echo "before running the mp_assembly on a HPC"    
-else
-    # run round of first stage of assembly
-    bash ${SCRIPT_DIR}/mp_assembly_stage1.sh -R $R -T ${TM} -s "$(echo $domains_str)"
-fi
+echo "      "
+echo ">> Prep completed."
+echo ">> Now use the fasta file to create your own fasta fragments (e.g. using https://robetta.bakerlab.org/fragmentsubmit.jsp) before running the mp_assembly on a HPC"
 

@@ -22,7 +22,7 @@ for cnt, val in enumerate(CA_idx):
     full_res = np.asarray([x for x in full_res - val if np.abs(x) <= 30]) + val
 
     # now renumber
-    A.data["resid"][full_res] = res_count
+    A.data.loc[full_res, "resid"] = res_count
 
     res_count += 1
 

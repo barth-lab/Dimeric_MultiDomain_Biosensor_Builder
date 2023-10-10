@@ -4,8 +4,7 @@
 
 cat out*silent > combined.silent
 
-######## 23/04/22 constraints are often violated with these harder problems... don't clean?
-# We should always take non-violating structures UNLESS there is a significant lack of them
+# We should always take non-violating structures
 grep SCORE combined.silent > tmp.tag
 # less than 1 for constraint for a tiny amount of leeway/machine error
 awk '$17<1' tmp.tag | awk '{print $NF}' > score.tag
@@ -18,9 +17,8 @@ while read p; do
     grep $p combined.silent >> combined_clean.silent
 done < score.tag
 
-# now filter to extract the top 10 % of structures (this may bias the method, is it better to take diversified structures?)
+# now filter to extract the top 10 % of structures
 grep SCORE combined_clean.silent > clean_scores.sc
-#grep SCORE combined.silent > clean_scores.sc
 awk '!/ref/' clean_scores.sc > temp && mv temp clean_scores.sc
 
 # get length of file (to know how many approx 10% represent)
@@ -32,11 +30,10 @@ slice=${slice_float%.*}
 sort -nk 2 clean_scores.sc | head -${slice} > filtered_scores.sc
 awk '{print $NF}' filtered_scores.sc > filtered_scores.tag
 
-#head -n 3 combined_clean.silent >> filtered.silent
-head -n 3 combined.silent >> filtered.silent
+head -n 3 combined_clean.silent >> filtered.silent
 while read p; do
-    grep $p combined.silent >> filtered.silent
-    #grep $p combined_clean.silent >> filtered.silent
+    grep $p combined_clean.silent >> filtered.silent
 done < filtered_scores.tag
 
-#bash /data/domain_construction/domain_assembly_constraints/main/run_clustering.sh -R /data/rosetta20_glis/ -S filtered.silent
+# cleanup
+rm combined_clean.silent combined.silent clean_scores.sc score.tag filtered_scores.tag

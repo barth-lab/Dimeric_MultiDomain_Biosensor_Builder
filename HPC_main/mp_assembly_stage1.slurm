@@ -11,7 +11,7 @@ O=output_scaffold
 mkdir $O
 
 TM=
-R=/home/dclw/rosetta20_glis/
+R=/location/to/rosetta
 domains=
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -24,7 +24,7 @@ do
 
     # now run domain assembly
     # need to resolve static etc. later
-    commands[$i]="$R/source/bin/mp_domain_assembly.linuxgccdebug \
+    commands[$i]="$R/source/bin/mp_domain_assembly.linuxgccrelease \
         -database $R/database/  \
         -in:file:fasta input_scaffold/all.fasta \
         -in:file:frag3 input_scaffold/frags.200.3mers \
