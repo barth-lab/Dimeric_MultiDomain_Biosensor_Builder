@@ -2,7 +2,7 @@
 
 # optional flags need default values to avoid errors
 C="-1"
-p=false
+p=0
 while getopts ":R:S:C:p:" opt; do
   case $opt in
     R)
@@ -45,7 +45,7 @@ $R/source/bin/cluster.linuxgccrelease \
         > clout \
         2> clerr
 
-if [ "$p" -ne "false" ]
+if [ "$p" -ne 0 ]
 then
     big_radius=$(grep --text radius clout)
     echo "     "

@@ -1,6 +1,5 @@
 #!/bin/bash
-#SBATCH --time 10:00:00 -n 1
-#SBATCH --mem 48G
+#SBATCH --time 12:00:00 -n 1
 #SBATCH --partition=serial
 #SBATCH --job-name=cluster
 
@@ -12,7 +11,7 @@ radius=$2
 
 echo ${current}
 
-$R/source/bin/cluster.linuxgccdebug \
+$R/source/bin/cluster.linuxgccrelease \
         -database $R/database/  \
         -silent_read_through_errors \
         -in:file:fullatom \

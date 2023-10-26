@@ -15,6 +15,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 for s in ${size_var[@]}; do
     rad=$(bc <<< "${big_radius} * ${s}")
     num=$(round $rad 2)
+    touch ${num}
+    rm -r ${num}
     mkdir ${num}
     cd ${num}
     sbatch ${SCRIPT_DIR}/mp_cluster.slurm ${loc}/${in_file} ${num}
