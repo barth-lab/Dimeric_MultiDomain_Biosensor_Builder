@@ -33,6 +33,7 @@ def check_stats(directory):
     ##### Now print stats ####
     print("#######")
     print("")
+    print(">>  Cluster %s  <<"%(directory.split("/")[-1]))
     print(">> Number of clusters: %i"%(len(C)))
     print(">> Number of structures in largest cluster: %.2f %%"%(100 * float(C[0]) / total_len))
     print(">> Number of structures in smallest cluster: %.2f %%"%(100 *float(C[-1]) / total_len))
