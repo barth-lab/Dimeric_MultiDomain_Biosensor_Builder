@@ -2,7 +2,7 @@
 
 Listed within this repository you will find the necessary code relevant to run the Dimeric MultiDomain Biosensor Builder used to produce chimera of CSF1R and VEGFR2 with TpoR in our work [TBC]. 
 
-Our protocol is fundamentally based on the Rosetta software[1]. Specficially, it include changes to the domain assembly protocol[2] by including constraints. This allows us to apply it to dimeric receptor design (the base version only works with monomers).
+Our protocol is fundamentally based on the Rosetta software[1]. Specficially, it includes changes to the domain assembly protocol[2] by introducing constraints. This allows us to apply it to dimeric receptor design (the base version only works with monomers).
 
 A lot of the individual steps are complex and involved; needing significant topological changes in input PDBs, the definition of various changable constraints, the building of arbitrarily changing fasta files and so on. We therefore provide here the means to automate most of the heavy lifting through a set of python and bash scripts. In theory, this should enable you to assemble any dimeric chimeric receptor based on any subset of domains you wish to use. In other words, pre-screen possible candidates that couple orthogonal input/output signals and engineer cellular behaviour.
 
@@ -72,11 +72,15 @@ More information on the package can be found at: https://github.com/Degiacomi-La
 
 Since the amount of adaquate sampling required to generate receptors is significant, across numerous stages of assembly, we provide also the means to parallelize stages on a slurm-based cluster using the slurm scripts in HPC_main. These should be adaptable if you are working with a different workload manager on some other HPC. These baseline scripts will need updating, as the paths to Rosetta etc. are not currently provided.
 
+The installation of Rosetta can take up to half a day on a standard desktop PC. Beyond that, the setting up of the conda environment etc. should take 10 minutes at most.
+
 # Running the builder protocol
 
 A full demo that takes you through the example of building an SCFR-TPoR chimera based on available structural models is provided through the Domain_Assembly_protocol.pdf file. This should be detailed enough to follow and apply to your own chimera, with plenty of information on the various flags needed for each stage of the assembly should you want to deviate. 
 
 For running the example discussed in the tutorial, we provide the necessary structural examples and corresponding input scripts in the example/folder. Beyond this, all you should need to do is update the paths in the various .sh or .slurm scripts you will be using throughout. 
+
+A simplified integration test is being built now (to be completed ~15/12/2023).
 
 # Contact
 
@@ -85,5 +89,7 @@ If you have any questions or concerns about the computational side of the method
 # References
 
 [1] Leaver-Fay et al., _Methods Enzymol_, 2011, (10.1016/B978-0-12-381270-4.00019-6)
+
 [2] Koehler Leman, J. & Bonneau, R., _Biochemistry_, 2017 (10.1021/acs.biochem.7b00995)
+
 [3] Rudden et al., _Bioinformatics_, 2022 (10.1093/bioinformatics/btab785)
