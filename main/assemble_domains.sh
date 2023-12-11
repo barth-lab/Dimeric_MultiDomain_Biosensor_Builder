@@ -1,27 +1,12 @@
 #!/bin/bash
-
-# author: Lucas Rudden
-
-# Here I want to write out the entire protocol of the modified approach to domain assembly
-# Assembly procotol is essentially domain assemble (with constraints), clustered and then taken further for assembly rounds
 # Construction always needs to occur down (i.e. towards cytoplasm)
 
-# Note that static vs mpi vs nothing in linux rosetta commands
-
-# https://stackoverflow.com/questions/14447406/bash-shell-script-check-for-a-flag-and-grab-its-value
-# https://archive.is/TRzn4
-
-# optional flags need default values to avoid errors
-h="true"
-
+S=2
 # define flags
-while getopts ":R:s:T:d:C:p:" opt; do
+while getopts ":S:s:d:C:p:" opt; do
   case $opt in
-    R)
-      R=$OPTARG # rosetta location
-      ;;
-    T)
-      TM=$OPTARG # which input domain corresponds to the TM region
+    S)
+      S=$OPTARG # which stage of assembly are we on (default is 2)
       ;;
     s)
       # allow importing of multiple domains https://unix.stackexchange.com/questions/164259/provide-two-arguments-to-one-option-using-getopts 
@@ -55,17 +40,27 @@ done
 # current script location
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# make run folder - remove for testing to avoid repeat calculations, TODO: convert this to checkpoint so we don't repeat from start each time
-# stage 2 of assembly
-mkdir input_scaffold_2
-cd input_scaffold_2/
+# make run folder - remove for testing to avoid repeat calculation
+# stage S of assembly
+touch input_scaffold_${S}
+rm -r input_scaffold_${S}
+mkdir input_scaffold_${S}
+cd input_scaffold_${S}/
+
+# if we are on stage S, what was the previous stage?
+if [ $S = 2 ]; then
+    stage0=""
+else
+    ((num= S - 1))
+    stage0="_${num}"
+fi
 
 # need to change in case two domains are added
 name=$(echo "${domains[0]}" | cut -d'.' -f1)
 
 set +o noglob
-cp ../input_scaffold/${name}_cut.pdb .
-cp ../output_scaffold/${C}/c.*.0.pdb .
+cp ../input_scaffold${stage0}/${name}_cut.pdb .
+cp ../output_scaffold${stage0}/${C}/c.*.0.pdb .
 # copy frag files for linker insertion during domain assembly
 cp ../input_scaffold/*frags* .
 # any of the cluster centers will work for the constraint and fasta files, since sequence wise they are identical
@@ -77,17 +72,3 @@ for s in c.*.0.pdb; do
     tac ${s} | awk '/TER/ {if (f) next; f=1}1' | tac > tmp # remove duplicate TER lines
     mv tmp ${s}
 done
-
-if [ "$h" == "true" ] ; then
-    echo "now run mp_assembly_stage2.sh on the HPC with parameters"
-else
-    # run round of first stage of assembly
-    bash ${SCRIPT_DIR}/mp_assembly_stage2.sh -R $R -T ${TM} -s "$(echo $domains_str)"
-fi
-
-# need to cut the linker regions during assembly as they'll be readded later - however we don't want to apply this to D3 as this is unstructured already
-# run domain assembly with constraints - building from top to bottom (EC to CT)
-# cluster
-# run linker design
-# cluster
-# select from miminum energy, and repear

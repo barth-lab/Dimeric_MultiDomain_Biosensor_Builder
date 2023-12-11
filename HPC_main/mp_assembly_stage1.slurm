@@ -13,6 +13,7 @@ mkdir $O
 TM=
 R=/location/to/rosetta
 domains=
+N=100 # number of output structures per run
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -37,7 +38,7 @@ do
         -constraints:cst_fa_weight 1 \
         -constant_seed \
 	-seed_offset $i \
-        -nstruct 100 \
+        -nstruct $N \
         -out:path:all output_scaffold/ \
 	-out:suffix _$s \
         -out:file:silent out_$s.silent \

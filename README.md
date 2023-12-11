@@ -32,7 +32,7 @@ Where /path/to/Rosetta denotes your respective path to wherever you have it inst
 
 Once you have copied over the file, you can build Rosetta following the standard process: https://www.rosettacommons.org/demos/latest/tutorials/install_build/install_build
 
-All Python scripts should work with the most up-to-date version of Python (as of December 2023), but we will assume you are using Python 3.10 to keep it compatible with the work described in our paper. We recommend first creating a safe conda environment (https://docs.conda.io/projects/conda/en/latest/index.html) to work in. For example,
+All Python scripts should work with the most up-to-date version of Python (as of December 2023), but we will assume you are using Python 3.10 to keep it compatible with the work described in our paper. You cannot use Python 2. We recommend first creating a safe conda environment (https://docs.conda.io/projects/conda/en/latest/index.html) to work in. For example,
 
 ```
 conda create --name py310 python=3.10
@@ -74,13 +74,119 @@ Since the amount of adaquate sampling required to generate receptors is signific
 
 The installation of Rosetta can take up to half a day on a standard desktop PC. Beyond that, the setting up of the conda environment etc. should take 10 minutes at most.
 
-# Running the builder protocol
+# Tutorial on the builder protocol
 
 A full demo that takes you through the example of building an SCFR-TPoR chimera based on available structural models is provided through the Domain_Assembly_protocol.pdf file. This should be detailed enough to follow and apply to your own chimera, with plenty of information on the various flags needed for each stage of the assembly should you want to deviate. 
 
 For running the example discussed in the tutorial, we provide the necessary structural examples and corresponding input scripts in the example/folder. Beyond this, all you should need to do is update the paths in the various .sh or .slurm scripts you will be using throughout. 
 
-A simplified integration test is being built now (to be completed ~15/12/2023).
+# Quick Guide
+
+To get you setup quickly, the following demonstrates the general pipeline with a short explanation for each flag. For more detail, please refer to the tutorial above. We'll be running the protocol locally and therefore will keep the number of models generated slim, meaning the results will not be particularly meaningful. For proper sampling of the vast conformational space these receptors can adopt, you should generate many more samples - hence the HPC slurm scripts provided and used in the main tutorial. The various mp_assemble_stage etc. bash files we'll be using here are functionally equivalent to the slurm scripts provided in HPC_main.
+
+You will need to choose your structural domains before running through the protocol. The most obvious source are pre-existing native domains from the PDB. However, you can also take advantage of structure prediction generative tools like AlphaFold2 (generate in browser with https://colab.research.google.com/github/deepmind/alphafold/blob/main/notebooks/AlphaFold.ipynb) or RoseTTAfold (in browser with https://robetta.bakerlab.org/). You'll need to identify the linker sequence which will be rebuilt by Rosetta.
+
+Create a test folder and copy your PDB files into there. You may also need additional linker metadata files depending on what you're doing (see the tutorial for detailed information). I'll continue as though we're using the files provided in the example folder.
+
+```
+/location/to/protocol/main/prepare_scaffold.sh -T 4 -s "D13.pdb D45.pdb D6.pdb D7.pdb" -l remove_linkers.txt -d "1 2 4" -a "1 2 3 4" -x add_linkers.txt -L True
+```
+
+| Flag        | Meaning          | 
+| :-------------: |-------------|
+| T | The domain in which the TM is located relative to the order given |
+| s | List of domains as a string (in order from N to C termini) |
+| l | The name of the remove linkers file, to remove pre-existing linkers in your input structures |
+| L | True/False depending on whether a ligand is present in the input |
+| d | A list of the input domains where dimerisation is occuring (in order from N to C termini)  |
+| x | The name of the add linkers file, containing the sequence information on needed linkers to rebuild  |
+| a | Number equivalent to domain being input. Any domain not mentioned will have their linker completely discarded |
+ 
+This will create a new folder called input_scaffold with the necessary files for assembly. Run with:
+
+```
+/location/to/protocol/main/mp_assembly_stage1.sh -T 4 -R /path/to/Rosetta -d "input_scaffold/D13_cut.pdb input_scaffold/D45_cut.pdb input_scaffold/D6_cut.pdb input_scaffold/D7_cut.pdb"
+```
+
+| Flag        | Meaning          |      
+|:-------------:|-------------|
+| T | The domain in which the TM is located relative to the order given (as above) |
+| R | The location of your Rosetta installation |
+| d | Based on your current directory location, the full name of your list of input domains |
+| N | Number of output structures (3 is the default, 100 is the default in the slurm script) per assembly run |
+
+The runtime for this first stage should be around 2 hours. 
+
+cd into the output_scaffold. For this quick setup with only 3 models produced it is not really necessary to cluster, but we'll include it here anyway because it is important to the actual protocol.
+
+```
+/location/to/protocol/main/remove_constraint_violations.sh
+```
+
+This will remove any models that violate the constraints calculated in the prepare_scaffold stage. Now we can cluster, though if you're running the example there is not really any purpose to this.
+
+```
+/location/to/protocol/main/run_clustering.sh -R /path/to/Rosetta -S filtered.silent
+``` 
+
+This will fail if filtered.silent is empty (i.e. all three models had violated constraints). Since we're aiming to just run through an example, we'll ignore a failure state and just move on. This will likely mean the final stage of assembly where we build linkers will give nonsense answers in terms of the linker conformation. This is another reason why a large amount of sampling is necessary.
+
+In the event that filtered.silent was empty, just take all three models from the initial assembly stage. You'll need to extract them from the silent file for this:
+
+```
+/location/to/rosetta/source/bin/extract_pdbs.linuxgccrelease -in:file:silent_struct_type binary -in:file:silent out.silent
+```
+
+Rename the three files to c.0.0.pdb, c.1.0.pdb and c.2.0.pdb respectively - our three "clustered centres". Now we prepare for the next assembly stage. Before running this, create a new folder called 0.0 and move the "clustered" files into there. assemble_domains requires a cluster radius to take data samples from so this is just a hack to get around that. Again, this is a symptom of you needing far more sampling than we are applying here.
+
+```
+/location/to/protocol/main/assemble_domains.sh -S 2 -d "1 2 4" -s "D6.pdb c.0.0.pdb" -C 0.0 -p 3
+```
+
+| Flag        | Meaning          |
+|:-------------:|-------------|
+| S | Stage of assembly (2 is the default) |
+| s | List of domains as a string. Includes the missing domain we're inserting, and the name of the first cluster centre |
+| d | A list of the input domains where dimerisation is occuring (in order from N to C termini) |
+| C | The cluster folder name based on chosen clustering radius |
+| p | The position in the current order of domains where we need to insert our domains, relative to the initial inputs (e.g. 3 when D6.pdb comes after D13.pdb and D45.pdb) |
+
+Now we can begin the actual assembly.
+
+```
+/location/to/protocol/main/mp_assemble_stage2.sh -R /path/to/Rosetta -S 2 -T 2 -D "input_scaffold_2/D6_cut.pdb"
+```
+
+| Flag        | Meaning          |
+|:-------------:|-------------|
+| R | The location of your Rosetta installation |
+| S | Stage of assembly (2 is the default) |
+| T | The domain in which the TM is located relative to where c.n.0.pdb is versus your added domain |
+| D | The name of your new added domain |
+| N | Number of output structures (3 is the default, 100 is the default in the slurm script) per assembly run |
+
+This will take about 4 hours to loop across the three "cluster centres" and generate three models each. After this assembly stage has completed, you should ideally cluster again before moving on. We won't do that for this example. Instead, we'll move on to rebuilding the linkers.
+
+First we need to prepare the loop rebuilding files - the final phase of assembly.
+
+```
+/location/to/protocol/main/prepare_linkers.sh -R /path/to/Rosetta -C 0.0 -d "1 2 4" -o "3 6 7 8 4 5 1 2" -l 3 -S 2
+``` 
+
+| Flag        | Meaning          |
+|:-------------:|-------------|
+| R | The location of your Rosetta installation |
+| C | The cluster folder name based on chosen clustering radius |
+| d | A list of the input domains where dimerisation is occuring (in order from N to C termini) |
+| o | The desired order of domains for the target topology based on the current order of domains - split now as a dimer |
+| l | The domain to which the ligand is bound, based on the split set of domains to accomodate the dimer state |
+| S | Stage of assembly (2 is the default) |
+
+A full explanation on exactly what these new flags are doing and why they're important is provided in the tutorial.
+
+Now we can actually build these linkers in.
+
+A simplified integration test using these commands is being built now (to be completed ~15/12/2023).
 
 # Contact
 
