@@ -41,7 +41,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 for i in ${I}/c.*.0.pdb; do
     idx=$(echo $i | cut -d'/' -f2 | cut -d'.' -f2)
-    $R/source/bin/mp_domain_assembly.linuxgccdebug \
+    $R/source/bin/mp_domain_assembly.linuxgccrelease \
               -database $R/database/  \
               -in:file:fasta ${I}/all.fasta \
               -in:file:frag3 ${I}/frags.200.3mers \

@@ -14,7 +14,7 @@ while getopts ":C:d:S:o:l:" opt; do
       IFS=' ' # split on space characters
       d=($OPTARG) ;; # dimerisation sites in terms of input all_verbose.fasta
     S)
-      r=$OPTARG # what round are we building from (e.g. if we needed intermediate stages to include domains)
+      S=$OPTARG # what round are we building from (e.g. if we needed intermediate stages to include domains)
       # this needs to be 2 or whatever
       ;;
     o)
@@ -50,8 +50,11 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # prep files
 I=input_loop
-mkdir $I
 O=output_loop
+touch $I
+touch $O
+rm -r $I $O
+mkdir $I
 mkdir $O
 
 # permit wildcard use
@@ -65,7 +68,7 @@ cp ./input_scaffold_${S}/frags* ./${I}
 
 # Add in residues at the correct positions for rebuilding
 for i in ./${I}/c.*.0.pdb; do
-    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold${r}/all_verbose.fasta -o "${o[@]}" -l $l
+    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold_${S}/all_verbose.fasta -o "${o[@]}" -l $l
     tac ${i} | awk '/TER/ {if (f) next; f=1}1' | tac > tmp # remove duplicate TER lines
     mv tmp ${i}
 done

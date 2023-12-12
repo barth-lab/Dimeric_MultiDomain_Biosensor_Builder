@@ -62,6 +62,10 @@ The following Python packages to run the protocol should be automatically instal
 - argparse
 - re
 
+You will also need the following python packages that will need to be installed separately:
+
+- pandas
+
 The necessary package, biobox[3], performs the majority of needed macromolecular, biophysical and topological functions. It can be installed with:
 
 ```
@@ -102,7 +106,7 @@ Create a test folder and copy your PDB files into there. You may also need addit
 | x | The name of the add linkers file, containing the sequence information on needed linkers to rebuild  |
 | a | Number equivalent to domain being input. Any domain not mentioned will have their linker completely discarded |
  
-This will create a new folder called input_scaffold with the necessary files for assembly. Run with:
+This will create a new folder called run with the current UNIX time. It is in this folder that you will need to run all of the following scripts (including the slurm scripts if you're using them) besides the clustering, which need to be run from inside generated output folders. Inside this run folder you will find another folder called input_scaffold with the necessary files for assembly. We run the first stage with:
 
 ```
 /location/to/protocol/main/mp_assembly_stage1.sh -T 4 -R /path/to/Rosetta -d "input_scaffold/D13_cut.pdb input_scaffold/D45_cut.pdb input_scaffold/D6_cut.pdb input_scaffold/D7_cut.pdb"
@@ -165,17 +169,16 @@ Now we can begin the actual assembly.
 | D | The name of your new added domain |
 | N | Number of output structures (3 is the default, 100 is the default in the slurm script) per assembly run |
 
-This will take about 4 hours to loop across the three "cluster centres" and generate three models each. After this assembly stage has completed, you should ideally cluster again before moving on. We won't do that for this example. Instead, we'll move on to rebuilding the linkers.
+This will take about 4 hours to loop across the three "cluster centres" and generate three models each. After this assembly stage has completed, you should ideally cluster again before moving on. We won't do that for this example. Instead, we'll move on to rebuilding the linkers. Again, you should create a dummy 0.0 folder and move your "cluster centres" into there.
 
 First we need to prepare the loop rebuilding files - the final phase of assembly.
 
 ```
-/location/to/protocol/main/prepare_linkers.sh -R /path/to/Rosetta -C 0.0 -d "1 2 4" -o "3 6 7 8 4 5 1 2" -l 3 -S 2
+/location/to/protocol/main/prepare_linkers.sh -C 0.0 -d "1 2 4" -o "3 6 7 8 4 5 1 2" -l 3 -S 2
 ``` 
 
 | Flag        | Meaning          |
 |:-------------:|-------------|
-| R | The location of your Rosetta installation |
 | C | The cluster folder name based on chosen clustering radius |
 | d | A list of the input domains where dimerisation is occuring (in order from N to C termini) |
 | o | The desired order of domains for the target topology based on the current order of domains - split now as a dimer |
@@ -185,6 +188,21 @@ First we need to prepare the loop rebuilding files - the final phase of assembly
 A full explanation on exactly what these new flags are doing and why they're important is provided in the tutorial.
 
 Now we can actually build these linkers in.
+
+```
+/location/to/protocol/main/build_linkers.sh -R /path/to/Rosetta
+```
+
+| Flag        | Meaning          |
+|:-------------:|-------------|
+| R | The location of your Rosetta installation |
+| N | Number of output structures per input (1 is the default) |
+
+After this has completed (roughly 2 hours), you should have your final set of models in output_loop as PDBs. 
+
+As a final step, you should relax these models (see www.rosettacommons.org/docs/latest/application_documentation/structure_prediction/relax) to get the true energies, as the nature of this multi-step assembly process does mean you'll have many poorly packed rotamers/contacts.
+
+If you want to use the same assessment approach as we did, you will next need to calculate the free energy of dimerisation and the coupling between residues for each of your receptors, and ideally average these across your different conformers.
 
 A simplified integration test using these commands is being built now (to be completed ~15/12/2023).
 

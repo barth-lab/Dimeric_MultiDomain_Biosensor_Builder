@@ -36,7 +36,6 @@ mkdir $O
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-# linuxgccdebug
 $R/source/bin/mp_domain_assembly.linuxgccrelease \
 	      -database $R/database/  \
 	      -in:file:fasta input_scaffold/all.fasta \

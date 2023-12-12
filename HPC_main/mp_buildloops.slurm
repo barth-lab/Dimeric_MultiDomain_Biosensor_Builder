@@ -5,13 +5,12 @@
 #SBATCH --error slurm.err
 #SBATCH --job-name=BuildLoops
 #SBATCH --partition=serial
-#SBATCH --array=1-361
-# batch scripts don't allow this to be precalculated sadly
+#SBATCH --array=1-361 # replace with 1-i*j 
 
-R=/home/dclw/rosetta20_glis/
-n=17 # number of cluster center PDBs to use (technically +1, but start at c.0.0.pdb)
+# i = number of repeats you want
+# j = number of cluster centres
 
-# number of array jobs is n +1 * 20
+R=    # Rosetta location
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -20,9 +19,9 @@ I=input_loop
 
 declare -a commands
 
-for i in {0..19}
+for i in {0..19} # how many loops do you want?
 do
-    for j in {0..17}; do
+	for j in {0..17}; do # replace 17 with j (minus 1 to account for counting from 0)
 
         ij=$(( $i * $n + $j ))
         cmd=$(( $ij + 1 ))
