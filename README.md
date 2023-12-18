@@ -86,7 +86,15 @@ For running the example discussed in the tutorial, we provide the necessary stru
 
 # Quick Guide
 
-To get you setup quickly, the following demonstrates the general pipeline with a short explanation for each flag. For more detail, please refer to the tutorial above. We'll be running the protocol locally and therefore will keep the number of models generated slim, meaning the results will not be particularly meaningful. For proper sampling of the vast conformational space these receptors can adopt, you should generate many more samples - hence the HPC slurm scripts provided and used in the main tutorial. The various mp_assemble_stage etc. bash files we'll be using here are functionally equivalent to the slurm scripts provided in HPC_main.
+A simplified version of the following is given via the integration_test.sh script in the root folder. Simply provide the script with your Rosetta build and it should run the assembly process on the example folder automatically.
+
+```
+bash integration_test.sh -R /path/to/rosetta
+```
+
+On a single desktop PC, this should take ~12 hours to complete, so you can leave it running overnight.
+
+The following demonstrates the general pipeline with a short explanation for each flag. For more detail, please refer to the tutorial above. We'll be running the protocol locally and therefore will keep the number of models generated slim, meaning the results will not be particularly meaningful. For proper sampling of the vast conformational space these receptors can adopt, you should generate many more samples - hence the HPC slurm scripts provided and used in the main tutorial. The various mp_assemble_stage etc. bash files we'll be using here are functionally equivalent to the slurm scripts provided in HPC_main.
 
 You will need to choose your structural domains before running through the protocol. The most obvious source are pre-existing native domains from the PDB. However, you can also take advantage of structure prediction generative tools like AlphaFold2 (generate in browser with https://colab.research.google.com/github/deepmind/alphafold/blob/main/notebooks/AlphaFold.ipynb) or RoseTTAfold (in browser with https://robetta.bakerlab.org/). You'll need to identify the linker sequence which will be rebuilt by Rosetta.
 
@@ -203,8 +211,6 @@ After this has completed (roughly 2 hours), you should have your final set of mo
 As a final step, you should relax these models (see www.rosettacommons.org/docs/latest/application_documentation/structure_prediction/relax) to get the true energies, as the nature of this multi-step assembly process does mean you'll have many poorly packed rotamers/contacts.
 
 If you want to use the same assessment approach as we did, you will next need to calculate the free energy of dimerisation and the coupling between residues for each of your receptors, and ideally average these across your different conformers.
-
-A simplified integration test using these commands is being built now (to be completed ~15/12/2023).
 
 # Contact
 
