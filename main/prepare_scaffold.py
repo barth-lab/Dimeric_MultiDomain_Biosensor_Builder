@@ -194,7 +194,7 @@ def get_linker_stats(linker_fasta):
     else:
         tol = lmax - l # shrink to 1 AA length minimum
 
-    return l, tol
+    return l+3, tol
 
 def linker_constraint(pdb0, pdb1, fasta_parts, fasta_total, ligand=False):
     """

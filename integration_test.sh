@@ -47,18 +47,30 @@ ${SCRIPT_DIR}/main/mp_assembly_stage1.sh -T 4 -R ${ROS} -d "input_scaffold/D13_c
 
 echo ">> Removing any constraint violating files"
 
-cd ./out_scaffold/
+cd ./output_scaffold/
 ${SCRIPT_DIR}/main/remove_constraint_violations.sh
 
 echo ">> Clustering"
 ${SCRIPT_DIR}/main/run_clustering.sh -R ${ROS} -S filtered.silent
-
+count_pdb=`ls -1 *.pdb 2>/dev/null | wc -l`
 mkdir 0.0
-mv c.*.pdb 0.0/
+
+#if there is no output, crash - but if only 1 in filtered.silent, take that
+if [ $(cat filtered.silent | wc -l) -lt 6 ]; then 
+   echo "-- No models generated within constraints needed. Rerun integration test from scratch --"
+elif [ $count_pdb -lt 1 ]; then 
+   echo ">> Only 1 model generated, using that..."
+   ${ROS}/source/bin/extract_pdbs.linuxgccrelease -in:file:silent_struct_type binary -in:file:silent filtered.silent
+   mv S*.pdb 0.0
+else
+   mv c.*.pdb 0.0/
+fi
+
 cd 0.0
 cnt=0
 for i in *.pdb; do
-    mv $i c.${cnt}.0.pdb
+    mv $i tmp # catch error
+    mv tmp c.${cnt}.0.pdb
     ((cnt = cnt + 1))
 done
 
@@ -67,22 +79,33 @@ echo ">> Setting up the scaffold for stage 2 by preparing for the missing empty 
 ${SCRIPT_DIR}/main/assemble_domains.sh -S 2 -d "1 2 4" -s "D6.pdb c.0.0.pdb" -C 0.0 -p 3
 
 echo ">> Constructing the next scaffold"
-${SCRIPT_DIR}/main/mp_assemble_stage2.sh -R ${ROS} -S 2 -T 2 -D "input_scaffold_2/D6_cut.pdb"
+${SCRIPT_DIR}/main/mp_assembly_stage2.sh -R ${ROS} -S 2 -T 2 -D "input_scaffold_2/D6_cut.pdb"
 
 echo ">> Reclustering"
 cd ./output_scaffold_2
 ${SCRIPT_DIR}/main/remove_constraint_violations.sh
 ${SCRIPT_DIR}/main/run_clustering.sh -R ${ROS} -S filtered.silent
-
+count_pdb=`ls -1 *.pdb 2>/dev/null | wc -l`
 mkdir 0.0
-mv c.*.pdb 0.0/
+
+#if there is no output, crash - but if only 1 in filtered.silent, take that
+if [ $(cat filtered.silent | wc -l) -lt 6 ]; then
+   echo "-- No models generated within constraints needed. Rerun integration test from scratch --"
+elif [ $count_pdb -lt 1 ]; then
+   echo ">> Only 1 model generated, using that..."
+   ${ROS}/source/bin/extract_pdbs.linuxgccrelease -in:file:silent_struct_type binary -in:file:silent filtered.silent
+   mv S*.pdb 0.0
+else
+   mv c.*.pdb 0.0/
+fi
+
 cd 0.0
 cnt=0
 for i in *.pdb; do
-    mv $i c.${cnt}.0.pdb
+    mv $i tmp # catch error
+    mv tmp c.${cnt}.0.pdb
     ((cnt = cnt + 1))
 done
-
 cd ${orig}
 
 echo ">> Preparing to rebuild the final loops"

@@ -92,7 +92,7 @@ A simplified version of the following is given via the integration_test.sh scrip
 bash integration_test.sh -R /path/to/rosetta
 ```
 
-On a single desktop PC, this should take ~12 hours to complete, so you can leave it running overnight.
+On a single desktop PC, this should take ~1 hour to complete. You may need to repeat it (or bump the numbers up for models generated) if it fails due to too many constraint violations.
 
 The following demonstrates the general pipeline with a short explanation for each flag. For more detail, please refer to the tutorial above. We'll be running the protocol locally and therefore will keep the number of models generated slim, meaning the results will not be particularly meaningful. For proper sampling of the vast conformational space these receptors can adopt, you should generate many more samples - hence the HPC slurm scripts provided and used in the main tutorial. The various mp_assemble_stage etc. bash files we'll be using here are functionally equivalent to the slurm scripts provided in HPC_main.
 
@@ -125,9 +125,9 @@ This will create a new folder called run with the current UNIX time. It is in th
 | T | The domain in which the TM is located relative to the order given (as above) |
 | R | The location of your Rosetta installation |
 | d | Based on your current directory location, the full name of your list of input domains |
-| N | Number of output structures (3 is the default, 100 is the default in the slurm script) per assembly run |
+| N | Number of output structures (6 is the default, 100 is the default in the slurm script) per assembly run |
 
-The runtime for this first stage should be around 2 hours. 
+The runtime for this first stage should be around 10 minutes. 
 
 cd into the output_scaffold. For this quick setup with only 3 models produced it is not really necessary to cluster, but we'll include it here anyway because it is important to the actual protocol.
 
@@ -175,9 +175,9 @@ Now we can begin the actual assembly.
 | S | Stage of assembly (2 is the default) |
 | T | The domain in which the TM is located relative to where c.n.0.pdb is versus your added domain |
 | D | The name of your new added domain |
-| N | Number of output structures (3 is the default, 100 is the default in the slurm script) per assembly run |
+| N | Number of output structures (6 is the default, 100 is the default in the slurm script) per assembly run |
 
-This will take about 4 hours to loop across the three "cluster centres" and generate three models each. After this assembly stage has completed, you should ideally cluster again before moving on. We won't do that for this example. Instead, we'll move on to rebuilding the linkers. Again, you should create a dummy 0.0 folder and move your "cluster centres" into there.
+This will take about 30 minutes to loop across the three "cluster centres" and generate three models each. After this assembly stage has completed, you should ideally cluster again before moving on. We won't do that for this example. Instead, we'll move on to rebuilding the linkers. Again, you should create a dummy 0.0 folder and move your "cluster centres" into there.
 
 First we need to prepare the loop rebuilding files - the final phase of assembly.
 
@@ -206,7 +206,9 @@ Now we can actually build these linkers in.
 | R | The location of your Rosetta installation |
 | N | Number of output structures per input (1 is the default) |
 
-After this has completed (roughly 2 hours), you should have your final set of models in output_loop as PDBs. 
+After this has completed (roughly 30 minutes), you should have your final set of models in output_loop as PDBs. 
+
+You may get a segementation fault with some of the loop rebuilding runs. This occurs because Rosetta cannot fit the loop into the space given, this stems from avoiding culling constraint violation models in previous steps. With much greater sampling on a HPC, you won't have this problem as these violating models will not be present in the final stage.
 
 As a final step, you should relax these models (see www.rosettacommons.org/docs/latest/application_documentation/structure_prediction/relax) to get the true energies, as the nature of this multi-step assembly process does mean you'll have many poorly packed rotamers/contacts.
 

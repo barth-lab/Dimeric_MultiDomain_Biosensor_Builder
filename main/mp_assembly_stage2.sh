@@ -1,7 +1,7 @@
 #!/bin/bash
 
 S=2
-N=3
+N=6
 # define flags
 while getopts ":R:S:T:N:D:" opt; do
   case $opt in
