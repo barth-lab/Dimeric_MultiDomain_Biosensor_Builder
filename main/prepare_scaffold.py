@@ -385,6 +385,7 @@ for cnt, p in enumerate(pdb):
 
     # cut linkers
     M, fasta_M = cut_linker(p, lines[cnt][:-1]) # remove \n from end of lines
+    M.renumber_resid_keep_chains(reset_resid_with_chain=False) # avoid domain assembly error where it splits dimers
     M.write_pdb(pdb_name + "_cut.pdb") # ignore hydrogens
 
     if np.any(linker_avoid == domain_count):
