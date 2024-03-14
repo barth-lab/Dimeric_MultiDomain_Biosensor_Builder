@@ -1,6 +1,6 @@
 #!/bin/bash
 
-S="2"
+S="1"
 o=0
 l=0
 while getopts ":C:d:S:o:l:" opt; do
@@ -15,7 +15,7 @@ while getopts ":C:d:S:o:l:" opt; do
       d=($OPTARG) ;; # dimerisation sites in terms of input all_verbose.fasta
     S)
       S=$OPTARG # what round are we building from (e.g. if we needed intermediate stages to include domains)
-      # this needs to be 2 or whatever
+      # this needs to be 2 or whatever. Leave blank if continuing from first build stage
       ;;
     o)
       set -f
@@ -45,6 +45,12 @@ done
 # bash /data/domain_construction/domain_assembly_constraints/main/build_linkers.sh -R /data/rosetta20_glis -C 8.09 -d "3 4" -o "3 6 7 8 4 5 1 2" -l 3 -r _2
 
 # This script needs to be run from the run folder
+if [ "$S" -eq 1 ]
+then
+    build=""
+else
+    build="_${S}"
+fi
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -61,14 +67,14 @@ mkdir $O
 set +o noglob
 
 # grab all cluster centers and put them in the input loop folder
-cp ./output_scaffold_${S}/${C}/c.*.0.pdb ./${I}
-cp ./input_scaffold_${S}/all_verbose.fasta ./${I} # - use this as a basis to reorder PDB
-cp ./input_scaffold_${S}/cst ./${I} # cst contain resid positions where we need to rebuild between
-cp ./input_scaffold_${S}/frags* ./${I}
+cp ./output_scaffold${build}/${C}/c.*.0.pdb ./${I}
+cp ./input_scaffold${build}/all_verbose.fasta ./${I} # - use this as a basis to reorder PDB
+cp ./input_scaffold${build}/cst ./${I} # cst contain resid positions where we need to rebuild between
+cp ./input_scaffold${build}/frags* ./${I}
 
 # Add in residues at the correct positions for rebuilding
 for i in ./${I}/c.*.0.pdb; do
-    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold_${S}/all_verbose.fasta -o "${o[@]}" -l $l
+    python ${SCRIPT_DIR}/get_resid_reorder.py -s ${i} -d "${d[@]}"  -f ./input_scaffold${build}/all_verbose.fasta -o "${o[@]}" -l $l
     tac ${i} | awk '/TER/ {if (f) next; f=1}1' | tac > tmp # remove duplicate TER lines
     mv tmp ${i}
 done

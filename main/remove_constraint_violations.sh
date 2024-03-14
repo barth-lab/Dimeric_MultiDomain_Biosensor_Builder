@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # check for violations of constraints in the output silent files
 # extract only those solutions that don't violate any constraints
 

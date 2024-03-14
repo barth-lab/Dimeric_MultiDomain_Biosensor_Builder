@@ -346,7 +346,7 @@ parser.add_argument('-d', '--dimer', nargs='+', required=False, default=1, help=
 parser.add_argument('-a', '--linker_avoid', nargs='+', default=0, required=False, help='Domains to avoid saving linkers of in fasta file prior to loop reconstruction starting from index 1. Value equal 0 (default) assumes no domains will avoid linker cutting. Note you can still remove linkers with the linker position file, and potentially readd them with the extra linker option.')
 parser.add_argument('-l', '--linker_positions', required=True, help='<Required> Text file containing the position of the linkers to remove from the input domains. Each line in the file must correspond to an input domain, and four (eight for dimer) columns for start/end points of cutting region (example: 1 3 X X means resid 1-3 will be identified as starting linkers and removed at the start of the protein, while nothing will be removed at the end.) This file must have the same number of lines as domains. Resid positions must be with respect to input data.')
 parser.add_argument('-x', '--extra_linker', required=False, default=None, help='Text file containing the domain index and desired extra linker residues for START and END of domain, X = no extra residues (e.g. 2 KS X on a line corresponds to domain 2 getting KS extra linker at the start BEFORE the current linkers, and X (nothing in this case) AFTER the current linkers at the end of the domain). This can be applied to any domain.')
-parser.add_argument('-L', '--Ligand', required=False, default=False, help='Is there a ligand attached to the structure? Set value to True or 1 if yes. If so, please ensure this is FIRST in your PDB file, not last otherwise the domain assembly will auto attach to the ligand. This will affect also how the constraints are defined.')
+parser.add_argument('-L', '--Ligand', required=False, default=-1, help='Is there a ligand attached to the structure? Set value to correct domain if true (e.g. 1 or 2 or 3...) Default is no ligand is present. Please ensure the ligand is FIRST in your PDB file, not last otherwise the domain assembly will auto attach to the ligand. This will affect also how the constraints are defined.')
 
 # notification on which are dimerisation/LBD domains
 args = parser.parse_args()
@@ -356,7 +356,7 @@ dimer_domains = np.asarray(args.dimer).astype(int)
 linker_avoid = np.asarray(args.linker_avoid).astype(int)
 linkers = str(args.linker_positions)
 extra_linkers = args.extra_linker
-user_ligand = args.Ligand
+user_ligand = int(args.Ligand)
 
 ##### MAIN RUNCODE ######
 
@@ -484,9 +484,9 @@ elif len(dimer_domains) > 1:
 
     for d in range(len(dimer_domains) - 1): #  don't need constraint for last dimer domain
 
-        if d == 0:
+        if dimer_domains[d] == user_ligand:
             # if a ligand is present, it'll be here (most likely), if not this will need editing
-            ligand = user_ligand
+            ligand = True
         else:
             ligand = False
 

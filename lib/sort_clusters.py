@@ -2,7 +2,6 @@
 Check stats in import cluster summary file 
 """
 
-import numpy as np
 import sys, os
 import glob
 

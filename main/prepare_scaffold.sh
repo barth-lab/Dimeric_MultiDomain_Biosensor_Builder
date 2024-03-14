@@ -7,7 +7,7 @@
 x=""
 a=""
 h="true"
-L="False"
+L="-1"
 
 # define flags
 while getopts ":s:T:l:d:x:a:L:" opt; do

@@ -10,6 +10,10 @@ The various python scripts are built to be "intelligent". They will attempt to b
 
 In addition to the scripts needed to run the assembly protocol, we also provide a comprehensive tutorial/documentation that details exactly how you can run through an example based on SCFR with TpoR, and gives information on the various stages/flags you can use in your own applications. 
 
+# CHANGELOG
+
+14/03/2024 - Bugfixes and general improvements, particularly to documentation. You can now have a ligand be in any of the input protein domains. For the prepare_scaffold flag, you need to provide the domain corresponding to the dimeric domain the ligand is in, rather than just a flat True or False.
+
 # Citation
 
 If this repo proves useful to you, please cite us with:

@@ -3,6 +3,7 @@
 # optional flags need default values to avoid errors
 C="-1"
 p=0
+f=0
 while getopts ":R:S:C:p:" opt; do
   case $opt in
     R)
@@ -15,7 +16,10 @@ while getopts ":R:S:C:p:" opt; do
       C=$OPTARG # cluster radius size
       ;;
     p)
-      p=$OPTARG
+      p=$OPTARG # set to 0 if you don't want to report on recommended cluster sizes
+      ;;
+    f)
+      f=$OPTARG # force cluster, if there are less than 20 samples, give warning on clustering and stops it. Use this to bypass warning
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -31,6 +35,16 @@ done
 round() {
   printf "%.${2}f" "${1}"
 }
+
+# first check how many samples there are in file
+num=$(grep SCORE $S | wc -l)
+num=$((num - 1))
+
+
+if [ 20 -gt "$num" ] && [ "$f" -eq 0 ]; then
+    echo ">> Number of samples in silent file less than 20. You should extract directly for next stage using extractpdb.sh. If you want to ignore this warning and rerun, set -f 1 and rerun this command"
+    exit 1
+fi
 
 $R/source/bin/cluster.linuxgccrelease \
         -database $R/database/  \
