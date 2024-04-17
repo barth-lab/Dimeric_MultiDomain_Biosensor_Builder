@@ -330,7 +330,7 @@ def create_loopfile(insert_positions, insert_seq, outname="loopfile"):
 
     with open(outname, "w") as f:
         for p in inserts:
-            f.write("LOOP  %4i %4i    0  0.0\n"%(p[0], p[1]))
+            f.write("LOOP  %4i %4i    0  0.0\n"%(p[0]-1, p[1]+1)) # include buffer
 
 # get new resid idx based on needed reordering for linker fill in
 # need to know inital structure of input data (i.e. dimerisation domains etc.)
