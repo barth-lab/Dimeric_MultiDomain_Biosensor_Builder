@@ -14,9 +14,7 @@ rm tmp.tag
 # now extract from silent file, the lines we want given by tag - this includes mem energies we need
 # first copy first three lines
 head -n 3 combined.silent >> combined_clean.silent
-while read p; do
-    grep $p combined.silent >> combined_clean.silent
-done < score.tag
+grep -F -f score.tag combined.silent > combined_clean.silent
 
 # now filter to extract the top 10 % of structures
 grep SCORE combined_clean.silent > clean_scores.sc
@@ -32,9 +30,7 @@ sort -nk 2 clean_scores.sc | head -${slice} > filtered_scores.sc
 awk '{print $NF}' filtered_scores.sc > filtered_scores.tag
 
 head -n 3 combined_clean.silent >> filtered.silent
-while read p; do
-    grep $p combined_clean.silent >> filtered.silent
-done < filtered_scores.tag
+grep -F -f filtered_scores.tag combined_clean.silent > filtered.silent
 
 # cleanup
 rm combined_clean.silent combined.silent clean_scores.sc score.tag filtered_scores.tag

@@ -34,7 +34,7 @@ cd ./TEST/
 
 echo ">> Crafting scaffold topology files"
 
-${SCRIPT_DIR}/main/prepare_scaffold.sh -T 4 -s "D13.pdb D45.pdb D6.pdb D7.pdb" -l remove_linkers.txt -d "1 2 4" -a "1 2 3 4" -x add_linkers.txt -L True
+${SCRIPT_DIR}/main/prepare_scaffold.sh -T 4 -s "D13.pdb D45.pdb D6.pdb D7.pdb" -l remove_linkers.txt -d "1 2 4" -a "1 2 3 4" -x add_linkers.txt -L 1
 
 runfolder=$(find -name "run*")
 cd ./$runfolder
