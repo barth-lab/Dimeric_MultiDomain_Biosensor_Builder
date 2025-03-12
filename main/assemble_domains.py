@@ -105,6 +105,12 @@ def get_linker_stats(linker_fasta):
 
     return l + 3, tol
 
+def linker_constraint_D1():
+    """
+    If the domain to be added comes after the pre-built construct, in theory the process is simpler (since no cst should be needed)
+    """
+    return ""
+
 def linker_constraint_D0(fasta_verbose, linker):
     """
     Constraints are determined by the verbose fasta built already, with the length of the linker determined by get_linker_stats
@@ -157,9 +163,10 @@ def linker_constraint_D0(fasta_verbose, linker):
 
 ##### INPUT ARGUMENTS #####
 parser = argparse.ArgumentParser(description='Input parameters for inserting domains into scaffold')
-parser.add_argument('-s','--pdb', nargs='+', help='<Required> List of PDB domains used for construction. Need either 2 or 3 inputs, either DX D or DX D DZ, where DX is the domain closest to the TM to be added, D is the assembled structure from the previous round, and DZ the "highest" domain yet to be added.', required=True)
+parser.add_argument('-s','--pdb', nargs='+', help='<Required> List of PDB domains used for construction. Need either 2 or 3 inputs, either DX D or DX D DZ, where DX is the domain closest to the TM to be added, D is the assembled structure from the previous round, and DZ the "highest" domain yet to be added. The order of inputs needs to be swapped if domain added is at c termini (see Position argument below).', required=True)
 parser.add_argument('-d', '--dimer', nargs='+', required=False, default=1, help='List of PDB domains that either dimerise or are participate in LBD (in order from EC to CT), starting from index 1 from domain 1. This should correspond to the previous input (i.e. all_verbose.fasta)')
 parser.add_argument('-p', '--add_domains', nargs='+', help='Where, with respect to the original all_verbose.fasta, are the new domains being added (starting from domain 1), i.e. if you are inserting the second domain from the first assembly stage in, here you should have -p 2')
+parser.add_argument('-P', '--position', default=0, help='Does the inserted construct come first or second in your input PDB argument? If first (default: 0), then it is being inserted somewhere in the construct itself. If afterwards, then no constraints are needed as this will be the new c termini')
 
 # how does this fit in if you need a third stage of assembly?
 
@@ -169,6 +176,7 @@ args = parser.parse_args()
 pdb = args.pdb
 dimer_domains = np.asarray(args.dimer).astype(int)
 domain_positions = np.asarray(args.add_domains).astype(int)
+position = args.position
 
 domain_count = 1
 fasta_verbose = []
@@ -185,7 +193,7 @@ for f in fasta_verbose_old:
     if f.startswith(">linker"):
         linker = True
         continue
-    elif f.startswith(">D"):
+    elif f.startswith(">"):
         linker=False
         continue
     elif linker:
@@ -193,6 +201,7 @@ for f in fasta_verbose_old:
     else:
         fasta_verbose_old_condensed.append(f)
 
+import ipdb
 # we also need to reorder the resid to match the fasta
 
 #### Different behaviour if 1 or 2 domains are being inserted. Cover the easier case first (1 domain insertion)
@@ -204,32 +213,72 @@ if len(pdb) == 2:
     # find starting point for building fasta
     loc = np.where(np.asarray(fasta_verbose_old) == fasta_verbose_old_condensed[domain_positions[-1] - 1])[0][0]
 
-    # first add in the new domain (which will be the start of your new fasta)
-    for line in fasta_verbose_old[loc-1:]: # from the fasta title
-        
-        if np.any(line == np.array(fasta_verbose_old_condensed)[dimer_domains[-1] - 1]):
-            # split line, half needs to go here, half at the other end of the pre-existing chain
-            #line = line[:-1] # no \n on the final line
-            line = line[:int(len(line)/2)] + "\n"
-            fasta_verbose.append(line)
-        else:
-            fasta_verbose.append(line)
 
-        if not line.startswith('>'):
-            all_fasta += line[:-1] # remove \n
-        
-    # now complete the other, pre-existing chain
-    for line in fasta_verbose_old:
-        # treat differently for that dimer domain after the added domain
-        if np.any(line == np.array(fasta_verbose_old_condensed)[dimer_domains[-1] - 1]):
-            #line = line[:-1]
-            line = line[:int(len(line)/2)] + "\n"
-            fasta_verbose.append(line)
-        else:
-            fasta_verbose.append(line)
+    if position == 0:
+       # first add in the new domain (which will be the start of your new fasta)
+        for line in fasta_verbose_old[loc-1:]: # from the fasta title
+            
+            if np.any(line == np.array(fasta_verbose_old_condensed)[dimer_domains[-1] - 1]):
+                # split line, half needs to go here, half at the other end of the pre-existing chain
+                #line = line[:-1] # no \n on the final line
+                line = line[:int(len(line)/2)] + "\n"
+                fasta_verbose.append(line)
+            else:
+                fasta_verbose.append(line)
 
-        if not line.startswith('>'):
-            all_fasta += line[:-1] # remove \n
+            if not line.startswith('>'):
+                all_fasta += line[:-1] # remove \n
+        
+        # now complete the other, pre-existing chain
+        for line in fasta_verbose_old:
+            # treat differently for that dimer domain after the added domain
+            if np.any(line == np.array(fasta_verbose_old_condensed)[dimer_domains[-1] - 1]):
+                #line = line[:-1]
+                line = line[:int(len(line)/2)] + "\n"
+                fasta_verbose.append(line)
+            else:
+                fasta_verbose.append(line)
+
+            if not line.startswith('>'):
+                all_fasta += line[:-1] # remove \n
+    else: # c termini addition, main fasta goes first. Just need to get dimer before
+        if fasta_verbose_old[loc-4] == np.array(fasta_verbose_old_condensed)[dimer_domains[-1] - 1]: # -4 to skip linker domain
+            pre_ctermini_domain_dimer = fasta_verbose_old[loc-4]
+            pre_ctermini_domain = pre_ctermini_domain_dimer[:len(pre_ctermini_domain_dimer)//2]
+
+            for line in fasta_verbose_old[:loc-5]:
+                fasta_verbose.append(line)
+                if not line.startswith('>'):
+                    all_fasta += line[:-1] # remove \n
+            new_idx = np.arange(len(all_fasta))
+
+            # split dimer domain before new domain
+            fasta_verbose.append(fasta_verbose_old[loc-5])
+            keep_aside_resid = np.arange(len(all_fasta), len(all_fasta)+len(pre_ctermini_domain)) # use to cat to end of reordering resid later
+            fasta_verbose.append(pre_ctermini_domain + "\n")
+            all_fasta += pre_ctermini_domain
+            L_new_idx = len(new_idx)
+            new_idx = np.concatenate((new_idx, np.arange(len(new_idx)+len(pre_ctermini_domain), len(new_idx)+2*len(pre_ctermini_domain))))
+
+            # carry on with existing c -termini domain
+            fasta_verbose.append(fasta_verbose_old[loc-3])
+            fasta_verbose.append(fasta_verbose_old[loc-2])
+            fasta_verbose.append(fasta_verbose_old[loc-1])
+            fasta_verbose.append(fasta_verbose_old[loc])
+            all_fasta += fasta_verbose_old[loc-2][:-1] + fasta_verbose_old[loc][:-1] # remove \n
+            new_idx = np.concatenate((new_idx, np.arange(L_new_idx+2*len(pre_ctermini_domain), L_new_idx+2*len(pre_ctermini_domain)+len(fasta_verbose_old[loc-2][:-1]+fasta_verbose_old[loc][:-1]))))
+
+            # now finally we can hop back to the dimerisation domain + new insertion and sort from there
+            fasta_verbose.append(fasta_verbose_old[loc-5])
+            fasta_verbose.append(pre_ctermini_domain+"\n")
+            fasta_verbose.append(fasta_verbose_old[loc-3]) #  don't forget the linkers!
+            fasta_verbose.append(fasta_verbose_old[loc-2])
+            fasta_verbose.append(fasta_verbose_old[loc-1])
+            fasta_verbose.append(fasta_verbose_old[loc])
+            all_fasta += pre_ctermini_domain + fasta_verbose_old[loc-2][:-1] + fasta_verbose_old[loc][:-1]
+            new_idx = np.concatenate((new_idx, keep_aside_resid)) # skip the linker and c termini since these are new (and won't be in the original construct topology)
+        else:
+            raise Exception("Error: Method currently require dimerising domain before c termini addition domain")
         
 # write out the fasta file (both verbose and all)
 # first verbose
@@ -250,7 +299,7 @@ with open("all.fasta", "w") as f:
 
 constraint = []
 # the constraint here is defined slightly differently - above for the first domain, and below for the second
-if len(pdb) == 2:
+if len(pdb) == 2 and position == 0:
     # first find linker between domains
     # there should be two instances of this domain remember, use that to your advantage
     domain_matches = np.where(np.asarray(fasta_verbose) == fasta_verbose[0])
@@ -258,54 +307,62 @@ if len(pdb) == 2:
     linker = fasta_verbose[domain_matches[0][1] - 1][:-1] # remove \n
     link_constraint = linker_constraint_D0(fasta_verbose, linker) # works if domain being added is BEFORE prebuilt structure
     constraint.append(link_constraint)
+else:
+    constraint.append("")
 
 with open("cst", "w") as f:
     for c in constraint:
-        f.write(c)
+         f.write(c)
 
 # Finally, reorder the input PDBs to match the fasta (specifically the cluster centers)
 if len(pdb) == 2:
-    # ignore the first domain because that is what's being added
-    cluster_fasta = fasta_verbose[2:]
-    # ignore the next linker if it's present also
-    if cluster_fasta[0].startswith(">linker"):
-        cluster_fasta = fasta_verbose[4:]
+    if position == 0:
+        # ignore the first domain because that is what's being added
+        cluster_fasta = fasta_verbose[2:]
+        # ignore the next linker if it's present also
+        if cluster_fasta[0].startswith(">linker"):
+            cluster_fasta = fasta_verbose[4:]
+        else:
+            pass
+
+        # remove \n and >
+        cluster_fasta = [f[:-1] for f in cluster_fasta]; fasta_bool = [not f.startswith(">") for f in cluster_fasta]
+        cluster_fasta = np.asarray(cluster_fasta)[fasta_bool]
+
+        # load in PDB to reorder
+        A = bb.Molecule(pdb[1])
+        A_fasta = pdb2fasta(A)
+
+        # now, based on cluster fasta and the known topology of the dimer, get the necessary reorder resid
+        # find where we have the other chain in the dimer (that is already built and doesn't need rejuggling)
+        loc = np.where(np.asarray(cluster_fasta) == cluster_fasta[-1])[0][0]  
+        # everything up to and including loc needs to be placed first - for hopping over the dimer, every resid after can be grouped up
+        # the resid up to the restart of the second chain are actually second 
+        resid_cnt = []
+        # join up the sequence after loc, which should be immutable from the input (unless second domain is being added, then other half of chain needs mainpulating) 
+        remaining_fasta = ''.join(cluster_fasta[loc+1:])
+        for cnt, f in enumerate(cluster_fasta):
+            if cnt <= loc:
+                resid_loc = [match.span() for match in re.finditer(f, A_fasta)][-1]
+                resid_cnt.append(np.arange(resid_loc[0], resid_loc[1]))
+                # remove these residues from A_fasta - actually A_fasta needs to be immutable w.r.t. PDB
+                #fasta_list = [char for char in A_fasta]
+                #del fasta_list[resid_loc[0]:resid_loc[1]]
+                #A_fasta = ''.join(fasta_list)
+        # join on the rest of the sequence
+        resid_loc = [match.span() for match in re.finditer(remaining_fasta, A_fasta)][0]
+        resid_cnt.append(np.arange(resid_loc[0], resid_loc[1]))
+
+        # Now use the new resid positions to rejuggle the pdb metadata
+        new_idx = np.concatenate(resid_cnt)
     else:
-        pass
-
-    # remove \n and >
-    cluster_fasta = [f[:-1] for f in cluster_fasta]; fasta_bool = [not f.startswith(">") for f in cluster_fasta]
-    cluster_fasta = np.asarray(cluster_fasta)[fasta_bool]
-
-    # load in PDB to reorder
-    A = bb.Molecule(pdb[1])
-    A_fasta = pdb2fasta(A)
-
-    # now, based on cluster fasta and the known topology of the dimer, get the necessary reorder resid
-    # find where we have the other chain in the dimer (that is already built and doesn't need rejuggling)
-    loc = np.where(np.asarray(cluster_fasta) == cluster_fasta[-1])[0][0]  
-    # everything up to and including loc needs to be placed first - for hopping over the dimer, every resid after can be grouped up
-    # the resid up to the restart of the second chain are actually second 
-    resid_cnt = []
-    # join up the sequence after loc, which should be immutable from the input (unless second domain is being added, then other half of chain needs mainpulating) 
-    remaining_fasta = ''.join(cluster_fasta[loc+1:])
-    for cnt, f in enumerate(cluster_fasta):
-        if cnt <= loc:
-            resid_loc = [match.span() for match in re.finditer(f, A_fasta)][-1]
-            resid_cnt.append(np.arange(resid_loc[0], resid_loc[1]))
-            # remove these residues from A_fasta - actually A_fasta needs to be immutable w.r.t. PDB
-            #fasta_list = [char for char in A_fasta]
-            #del fasta_list[resid_loc[0]:resid_loc[1]]
-            #A_fasta = ''.join(fasta_list)
-    # join on the rest of the sequence
-    resid_loc = [match.span() for match in re.finditer(remaining_fasta, A_fasta)][0]
-    resid_cnt.append(np.arange(resid_loc[0], resid_loc[1]))
-
-    # Now use the new resid positions to rejuggle the pdb metadata
-    new_idx = np.concatenate(resid_cnt)
+        A = bb.Molecule(pdb[0])
     A.data["chain"] = "A" # set all to A so the reordering works as expected
     A.reorder_resid(new_idx)
-    A.write_pdb(pdb[1])
+    if position == 0:
+        A.write_pdb(pdb[1])
+    else:
+        A.write_pdb(pdb[0])
 
 # remember, you need to also delete any TER lines that aren't the last one
 #TODO: Figure out also how to deal with domains being added elsewhere (filling in the gaps, i.e. the ones we need to end on)

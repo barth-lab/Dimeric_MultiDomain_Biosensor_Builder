@@ -25,7 +25,7 @@ def get_reorder_resid(fasta, order, dimer, ligand=0):
     fasta_record = 0 # current fasta length (i.e. current PDB structure prior to reordering)
     shift= 0 # linker shift (i.e. based on linker presence in fasta)
     chainA = True # are we transversing chain A right now?
-
+    
     # first thing, split the dimerisation domains into two - this doesn't really work through if we have a ligand attached
     fasta_new = []
     cnt = 0
@@ -52,7 +52,6 @@ def get_reorder_resid(fasta, order, dimer, ligand=0):
             else:
                 fasta_new.append(f)
                 cnt += 1
-
     # create an intermediate fasta file without all the periphral content to assist with knowing the resid reordering
     fasta_condensed = []
     for f in fasta_new:
@@ -85,7 +84,6 @@ def get_reorder_resid(fasta, order, dimer, ligand=0):
 
             if len(f) == 3: # a linker is present
                 fasta_chainB.append([f[2][0] + "_B", f[2][1]])
-
     # for now (for CSF1R) assume order is always from top to bottom - but this will need to be addressed later
     #for i in range(len(fasta)): # can't move through via order and shift based on linker (screws up ordering) - #TODO fix this
 

@@ -2,8 +2,9 @@
 # Construction always needs to occur down (i.e. towards cytoplasm)
 
 S=2
+P=0
 # define flags
-while getopts ":S:s:d:C:p:" opt; do
+while getopts ":S:s:d:C:p:P:" opt; do
   case $opt in
     S)
       S=$OPTARG # which stage of assembly are we on (default is 2)
@@ -21,7 +22,10 @@ while getopts ":S:s:d:C:p:" opt; do
       C=$OPTARG # cluster center to continue assembly from
       ;;
     p) 
-      p=$OPTARG # current (i.e. prior to assembly) position of the domain(s) being added - upgrade to include more domains
+      p=$OPTARG # current (i.e. prior to assembly) insertion point of the domain(s) being added - upgrade to include more domains
+      ;;
+    P) 
+      P=$OPTARG # Are we inserting in the middle of the construct (default 0) or c termini (1)
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -56,7 +60,11 @@ else
 fi
 
 # need to change in case two domains are added
-name=$(echo "${domains[0]}" | cut -d'.' -f1)
+if [ $P = 0 ]; then
+    name=$(echo "${domains[0]}" | cut -d'.' -f1)
+else
+    name=$(echo "${domains[1]}" | cut -d'.' -f1)
+fi
 
 set +o noglob
 cp ../input_scaffold${stage0}/${name}_cut.pdb .
@@ -68,7 +76,11 @@ cp ../input_scaffold/*frags* .
 
 # for each cluster center, we need to restructure the metadata
 for s in c.*.0.pdb; do
-    ${SCRIPT_DIR}/assemble_domains.py -s ${name}_cut.pdb ${s} -d "${d[@]}" --add_domains ${p}
+    if [ $P = 0 ]; then
+        ${SCRIPT_DIR}/assemble_domains.py -s ${name}_cut.pdb ${s} -d "${d[@]}" --add_domains ${p} -P $P
+    else
+	${SCRIPT_DIR}/assemble_domains.py -s ${s} ${name}_cut.pdb -d "${d[@]}" --add_domains ${p} -P $P
+    fi
     tac ${s} | awk '/TER/ {if (f) next; f=1}1' | tac > tmp # remove duplicate TER lines
     mv tmp ${s}
 done
