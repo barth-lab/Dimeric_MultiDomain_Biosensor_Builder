@@ -229,3 +229,7 @@ If you have any questions or concerns about the computational side of the method
 [2] Koehler Leman, J. & Bonneau, R., _Biochemistry_, 2017 (10.1021/acs.biochem.7b00995)
 
 [3] Rudden et al., _Bioinformatics_, 2022 (10.1093/bioinformatics/btab785)
+
+# Common Errors
+
+After the running buildlinkers, you might find that your input PDB structures look weird, with residues seemingly "hopping" all over the place (ignoring the actual linker residues at the origin of your system). This means your domain ordering, the `-o` flag, was incorrect. You'll need to shuffle and play with this until it looks correct flag, was incorrect. You'll need to shuffle and play with this until it looks correct.
