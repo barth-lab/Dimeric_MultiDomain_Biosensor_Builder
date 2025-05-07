@@ -12,7 +12,7 @@ In addition to the scripts needed to run the assembly protocol, we also provide 
 
 # CHANGELOG
 
-14/03/2024 - Bugfixes and general improvements, particularly to documentation. You can now have a ligand be in any of the input protein domains. For the prepare_scaffold flag, you need to provide the domain corresponding to the dimeric domain the ligand is in, rather than just a flat True or False.
+14/03/2024 - Bugfixes and general improvements, particularly to documentation. You can now have a ligand be in any of the input protein domains. For the prepare_scaffold flag, you need to provide the domain corresponding to the dimeric domain the ligand is in (the -L flag), rather than just a flat True or False.
 
 # Citation
 
@@ -105,7 +105,7 @@ You will need to choose your structural domains before running through the proto
 Create a test folder and copy your PDB files into there. You may also need additional linker metadata files depending on what you're doing (see the tutorial for detailed information). I'll continue as though we're using the files provided in the example folder.
 
 ```
-/location/to/protocol/main/prepare_scaffold.sh -T 4 -s "D13.pdb D45.pdb D6.pdb D7.pdb" -l remove_linkers.txt -d "1 2 4" -a "1 2 3 4" -x add_linkers.txt -L True
+/location/to/protocol/main/prepare_scaffold.sh -T 4 -s "D13.pdb D45.pdb D6.pdb D7.pdb" -l remove_linkers.txt -d "1 2 4" -a "1 2 3 4" -x add_linkers.txt -L 1
 ```
 
 | Flag        | Meaning          | 
@@ -113,7 +113,7 @@ Create a test folder and copy your PDB files into there. You may also need addit
 | T | The domain in which the TM is located relative to the order given |
 | s | List of domains as a string (in order from N to C termini) |
 | l | The name of the remove linkers file, to remove pre-existing linkers in your input structures |
-| L | True/False depending on whether a ligand is present in the input |
+| L | 1, 2, 3, 4 etc. depending on which domain the ligand is present in your input. The ligand MUST be first in sequence in the PDB |
 | d | A list of the input domains where dimerisation is occuring (in order from N to C termini)  |
 | x | The name of the add linkers file, containing the sequence information on needed linkers to rebuild  |
 | a | Number equivalent to domain being input. Any domain not mentioned will have their linker completely discarded |
